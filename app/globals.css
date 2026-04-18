@@ -1,26 +1,190 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface-inset: var(--surface-inset);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-board-canvas: var(--board-canvas);
+  --color-board-canvas-muted: var(--board-canvas-muted);
+  --color-board-well: var(--board-well);
+  --color-board-lane: var(--board-lane);
+  --color-board-chip-rail: var(--board-chip-rail);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* ── Brand palette ─────────────────────────────────────────────────────────
+     Single source of truth for raw colour values.
+     Mirrors config/brand.ts — keep both in sync.
+  ──────────────────────────────────────────────────────────────────────────── */
+  --brand-honeydew: #ffffff;       /* white  – card / raised surfaces        */
+  --brand-dust-grey: #cdd5d1;      /* neutral soft grey – muted / dividers   */
+  --brand-space-indigo: #222e50;   /* deep navy         – primary brand      */
+  --brand-dusty-mauve: #F0803C;    /* orange            – secondary / accent */
+  --brand-bubblegum-pink: #f45b69; /* bright red-pink   – CTA / destructive  */
+
+  /* ── Derived / helper values ────────────────────────────────────────────── */
+  --brand-space-indigo-light: #2d3d68; /* sidebar hover / accent             */
+  --brand-space-indigo-text: #ffffff;  /* foreground on indigo backgrounds   */
+
+  /* ── Radius ─────────────────────────────────────────────────────────────── */
+  --radius: 0.625rem;
+
+  /* ── Spacing ────────────────────────────────────────────────────────────── */
+  --page-padding: 2rem;
+  --section-gap: 2rem;
+
+  /* ── Shadcn semantic tokens (light mode) ────────────────────────────────── */
+  --background: #f8f9fa;
+  --foreground: var(--brand-space-indigo);
+
+  --card: #ffffff;
+  --card-foreground: var(--brand-space-indigo);
+
+  --popover: #ffffff;
+  --popover-foreground: var(--brand-space-indigo);
+
+  --primary: var(--brand-space-indigo);
+  --primary-foreground: var(--brand-space-indigo-text);
+
+  --secondary: var(--brand-dusty-mauve);
+  --secondary-foreground: var(--brand-space-indigo-text);
+
+  --muted: var(--brand-dust-grey);
+  --muted-foreground: #4a5568;
+
+  --accent: var(--brand-dusty-mauve);
+  --accent-foreground: var(--brand-space-indigo-text);
+
+  --destructive: var(--brand-bubblegum-pink);
+
+  --border: #e2e5e3;
+  --input: #e2e5e3;
+  --ring: var(--brand-dusty-mauve);
+
+  /* ── Surface layers ─────────────────────────────────────────────────────── */
+  --surface-inset: #f0f1f3;
+
+  /* ── Plan / Kanban board — outer surface matches workspace doc chrome (bg-muted) ─ */
+  --board-canvas: var(--muted);
+  --board-canvas-muted: var(--muted-foreground);
+  --board-well: var(--board-canvas);
+  /* Slightly lifted vs canvas so white cards read clearly on dust grey */
+  --board-lane: color-mix(in srgb, var(--background) 72%, white 28%);
+  --board-chip-rail: var(--board-lane);
+
+  /* ── Chart colours ──────────────────────────────────────────────────────── */
+  --chart-1: var(--brand-space-indigo);
+  --chart-2: var(--brand-dusty-mauve);
+  --chart-3: var(--brand-bubblegum-pink);
+  --chart-4: var(--brand-dust-grey);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  /* ── Sidebar (light rail — navy text, soft neutral chrome) ──────────────── */
+  --sidebar: #f2f3f6;
+  --sidebar-foreground: var(--brand-space-indigo);
+  --sidebar-primary: var(--brand-bubblegum-pink);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, var(--brand-space-indigo) 10%, transparent);
+  --sidebar-accent-foreground: var(--brand-space-indigo);
+  --sidebar-border: #e2e5eb;
+  --sidebar-ring: var(--brand-dusty-mauve);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: var(--brand-bubblegum-pink);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: var(--brand-dusty-mauve);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: var(--brand-dusty-mauve);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: var(--brand-bubblegum-pink);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: var(--brand-dusty-mauve);
+  --surface-inset: oklch(0.18 0 0);
+  --chart-1: var(--brand-bubblegum-pink);
+  --chart-2: var(--brand-dusty-mauve);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.19 0.01 264);
+  --sidebar-foreground: oklch(0.93 0.01 264);
+  --sidebar-primary: var(--brand-bubblegum-pink);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.26 0.02 264);
+  --sidebar-accent-foreground: oklch(0.93 0.01 264);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: var(--brand-dusty-mauve);
+
+  --board-canvas: var(--muted);
+  --board-canvas-muted: var(--muted-foreground);
+  --board-well: var(--board-canvas);
+  --board-lane: color-mix(in oklch, var(--card) 55%, var(--muted) 45%);
+  --board-chip-rail: var(--board-lane);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground max-w-[100vw] overflow-x-hidden;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Solid board backdrop only (no dot grid — avoids noisy layering). */
+  .board-canvas {
+    background-color: var(--board-canvas);
+  }
 }

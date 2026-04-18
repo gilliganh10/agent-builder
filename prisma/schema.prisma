@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// AgentDefinition — a single agent or flow, editable in the builder
+// ---------------------------------------------------------------------------
+
+model AgentDefinition {
+  id             String    @id
+  name           String
+  slug           String    @unique
+  description    String    @default("")
+  kind           String
+  instructions   String
+  allowedTools   Json
+  defaultModel   String
+  outputSchema   Json?
+  flowDefinition Json?
+  mode           String    @default("stateless")
+  publishToken   String?   @unique
+  publishedAt    DateTime?
+  meta           Json
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  versions AgentVersion[]
+  runs     AgentRun[]
+  sessions ConversationSession[]
+}
+
+model AgentVersion {
+  id                String   @id
+  agentDefinitionId String
+  version           Int
+  instructions      String
+  allowedTools      Json
+  defaultModel      String
+  outputSchema      Json?
+  flowDefinition    Json?
+  changelog         String
+  createdAt         DateTime @default(now())
+
+  agentDefinition AgentDefinition @relation(fields: [agentDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([agentDefinitionId, version])
+  @@index([agentDefinitionId])
+}
+
+model AgentRun {
+  id                String   @id
+  agentDefinitionId String
+  agentVersionId    String?
+  sessionId         String?
+  status            String
+  input             String
+  finalOutput       String?
+  tokenUsage        Json?
+  costEstimate      Float?
+  durationMs        Int?
+  error             String?
+  triggeredBy       String
+  meta              Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  agentDefinition AgentDefinition      @relation(fields: [agentDefinitionId], references: [id])
+  session         ConversationSession? @relation(fields: [sessionId], references: [id])
+  steps           RunStep[]
+  artifacts       RunArtifact[]
+  evals           RunEval[]
+
+  @@index([createdAt])
+  @@index([agentDefinitionId])
+  @@index([sessionId])
+}
+
+model ConversationSession {
+  id                String   @id
+  agentDefinitionId String
+  status            String   @default("active")
+  participantId     String?
+  meta              Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  agentDefinition AgentDefinition @relation(fields: [agentDefinitionId], references: [id])
+  runs            AgentRun[]
+
+  @@index([agentDefinitionId])
+  @@index([participantId])
+}
+
+model RunStep {
+  id               String   @id
+  runId            String
+  stepIndex        Int
+  kind             String
+  status           String
+  toolName         String?
+  nodeId           String?
+  input            Json
+  output           Json?
+  tokenUsage       Json?
+  durationMs       Int?
+  error            String?
+  validationPassed Boolean?
+  createdAt        DateTime @default(now())
+
+  run AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+}
+
+model RunArtifact {
+  id              String    @id
+  runId           String
+  kind            String
+  targetType      String?
+  targetId        String?
+  data            Json
+  previousData    Json?
+  appliedAt       DateTime?
+  appliedBy       String?
+  rejected        Boolean   @default(false)
+  rejectedReason  String?
+  rejectedAt      DateTime?
+  rejectedBy      String?
+  proposalOutcome Json?
+  ignoredAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  run AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+}
+
+model PrimitiveDefinition {
+  id           String   @id
+  name         String
+  slug         String   @unique
+  kind         String
+  description  String   @default("")
+  instructions String
+  config       Json
+  allowedTools Json
+  defaultModel String
+  meta         Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RunEval {
+  id        String   @id
+  runId     String
+  evalName  String
+  score     Float?
+  pass      Boolean?
+  reasoning String?
+  meta      Json
+  createdAt DateTime @default(now())
+
+  run AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+}
