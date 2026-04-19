@@ -65,7 +65,6 @@ export default async function AgentDetailPage({ params, searchParams }: Props) {
       latestVersion={latestVersion}
       versions={versions}
       runs={runs}
-      projects={[]}
       allAgentSlugs={allAgentSlugs}
       allPrimitiveSlugs={allPrimitiveSlugs}
       initialTab={tab}

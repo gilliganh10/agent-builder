@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  InstructionTextareaWithVariables,
+  type VariableInsertGroups,
+} from "@/features/agents/shared/InstructionVariablePicker";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,6 +33,7 @@ interface AttachmentEditorProps {
   primitiveSlugs: string[];
   orchestratorVars: VarDefinition[];
   blockType: string;
+  variableGroups?: VariableInsertGroups;
 }
 
 const MODES: { value: AttachmentMode; label: string; hint: string }[] = [
@@ -86,6 +90,7 @@ export function AttachmentEditor({
   primitiveSlugs,
   orchestratorVars,
   blockType,
+  variableGroups,
 }: AttachmentEditorProps) {
   const isInline = !attachment.primitiveId;
   const allowedModes = blockType === "user"
@@ -231,14 +236,26 @@ export function AttachmentEditor({
               </div>
               <div>
                 <Label className="text-[10px]">Additional Guidance (optional)</Label>
-                <Textarea
-                  className="text-xs min-h-[40px]"
-                  value={attachment.inlinePrimitive.instructions}
-                  onChange={(e) =>
-                    onChange({ inlinePrimitive: { ...attachment.inlinePrimitive!, instructions: e.target.value } })
-                  }
-                  placeholder="Extra instructions for the extraction LLM (optional)"
-                />
+                {variableGroups ? (
+                  <InstructionTextareaWithVariables
+                    value={attachment.inlinePrimitive.instructions}
+                    onChange={(v) =>
+                      onChange({ inlinePrimitive: { ...attachment.inlinePrimitive!, instructions: v } })
+                    }
+                    groups={variableGroups}
+                    placeholder="Extra instructions for the extraction LLM (optional)"
+                    minHeightClass="min-h-[40px]"
+                  />
+                ) : (
+                  <textarea
+                    className="border-input bg-background min-h-[40px] w-full rounded-md border px-3 py-2 text-xs"
+                    value={attachment.inlinePrimitive.instructions}
+                    onChange={(e) =>
+                      onChange({ inlinePrimitive: { ...attachment.inlinePrimitive!, instructions: e.target.value } })
+                    }
+                    placeholder="Extra instructions for the extraction LLM (optional)"
+                  />
+                )}
               </div>
               <div>
                 <Label className="text-[10px]">Model (optional)</Label>
@@ -256,23 +273,33 @@ export function AttachmentEditor({
             <>
               <div>
                 <Label className="text-[10px]">Instructions</Label>
-                <Textarea
-                  className="text-xs min-h-[60px]"
-                  value={attachment.inlinePrimitive.instructions}
-                  onChange={(e) =>
-                    onChange({ inlinePrimitive: { ...attachment.inlinePrimitive!, instructions: e.target.value } })
-                  }
-                  placeholder={
-                    attachment.mode === "override"
-                      ? "Rewrite the user message as a pirate."
-                      : "Enter instructions for this primitive..."
-                  }
-                />
-                {attachment.mode === "override" && (
-                  <p className="text-[9px] text-muted-foreground mt-0.5">
-                    Rewriter outputs the replacement message directly. Use{" "}
-                    &#123;&#123;env.X&#125;&#125; or &#123;&#123;vars.X&#125;&#125; for variables.
-                  </p>
+                {variableGroups ? (
+                  <InstructionTextareaWithVariables
+                    value={attachment.inlinePrimitive.instructions}
+                    onChange={(v) =>
+                      onChange({ inlinePrimitive: { ...attachment.inlinePrimitive!, instructions: v } })
+                    }
+                    groups={variableGroups}
+                    placeholder={
+                      attachment.mode === "override"
+                        ? "Rewrite the user message as a pirate."
+                        : "Enter instructions for this primitive..."
+                    }
+                    minHeightClass="min-h-[60px]"
+                  />
+                ) : (
+                  <textarea
+                    className="border-input bg-background min-h-[60px] w-full rounded-md border px-3 py-2 text-xs"
+                    value={attachment.inlinePrimitive.instructions}
+                    onChange={(e) =>
+                      onChange({ inlinePrimitive: { ...attachment.inlinePrimitive!, instructions: e.target.value } })
+                    }
+                    placeholder={
+                      attachment.mode === "override"
+                        ? "Rewrite the user message as a pirate."
+                        : "Enter instructions for this primitive..."
+                    }
+                  />
                 )}
               </div>
 

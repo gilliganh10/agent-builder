@@ -17,12 +17,9 @@ import {
   resolveBuilderSubtab,
 } from "@/features/agents/agent-detail-tabs";
 import type { AgentDefinition, AgentVersion, AgentRun } from "@/db/agents/schema";
-import type { Project } from "@/db/projects/schema";
 import { AgentOverviewTab } from "@/features/agents/AgentOverviewTab";
 import { AgentVersionHistory } from "@/features/agents/AgentVersionHistory";
 import { AgentRunsTab } from "@/features/agents/AgentRunsTab";
-import { AgentDatasetTab } from "@/features/agents/AgentDatasetTab";
-import { AgentTriggersTab } from "@/features/agents/AgentTriggersTab";
 import { FlowCanvasTab } from "@/features/agents/FlowCanvasTab";
 import { PlanBuilderTab } from "@/features/agents/PlanBuilderTab";
 import { TestBuilderTab } from "@/features/agents/TestBuilderTab";
@@ -31,7 +28,6 @@ interface AgentWorkspaceInnerProps {
   latestVersion?: AgentVersion | null;
   versions?: AgentVersion[];
   runs?: AgentRun[];
-  projects?: Project[];
   allAgentSlugs?: string[];
   allPrimitiveSlugs?: string[];
 }
@@ -40,7 +36,6 @@ function AgentWorkspaceInner({
   latestVersion,
   versions = [],
   runs = [],
-  projects = [],
   allAgentSlugs = [],
   allPrimitiveSlugs = [],
 }: AgentWorkspaceInnerProps) {
@@ -78,7 +73,6 @@ function AgentWorkspaceInner({
           latestVersion={latestVersion}
           versions={versions}
           runs={runs}
-          projects={projects}
           allAgentSlugs={allAgentSlugs}
           allPrimitiveSlugs={allPrimitiveSlugs}
         />
@@ -102,7 +96,7 @@ function AgentWorkspaceInner({
 
   if (isGraphTab) {
     return (
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <AgentWorkspaceHeader />
         <FlowBuilderProvider
           agent={agent}
@@ -117,7 +111,7 @@ function AgentWorkspaceInner({
 
   if (isPlanTab) {
     return (
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <AgentWorkspaceHeader />
         <SimplifiedBuilderProvider>{body}</SimplifiedBuilderProvider>
       </div>
@@ -126,7 +120,7 @@ function AgentWorkspaceInner({
 
   if (isTestTab) {
     return (
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <AgentWorkspaceHeader />
         <ChatBuilderProvider allPrimitiveSlugs={allPrimitiveSlugs}>
           {body}
@@ -136,7 +130,7 @@ function AgentWorkspaceInner({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <AgentWorkspaceHeader />
       {body}
     </div>
@@ -147,7 +141,6 @@ function TabContent({
   latestVersion,
   versions,
   runs,
-  projects,
   allAgentSlugs: _allAgentSlugs,
   allPrimitiveSlugs: _allPrimitiveSlugs,
 }: AgentWorkspaceInnerProps) {
@@ -175,26 +168,10 @@ function TabContent({
     );
   }
 
-  if (activeTab === "dataset") {
-    return (
-      <ScrollableTab>
-        <AgentDatasetTab agent={agent} />
-      </ScrollableTab>
-    );
-  }
-
-  if (activeTab === "triggers") {
-    return (
-      <ScrollableTab>
-        <AgentTriggersTab agent={agent} />
-      </ScrollableTab>
-    );
-  }
-
   if (activeTab === "runs") {
     return (
-      <ScrollableTab>
-        <AgentRunsTab agent={agent} runs={runs ?? []} projects={projects ?? []} />
+      <ScrollableTab fullWidth>
+        <AgentRunsTab agent={agent} runs={runs ?? []} />
       </ScrollableTab>
     );
   }
@@ -210,10 +187,24 @@ function TabContent({
   return null;
 }
 
-function ScrollableTab({ children }: { children: ReactNode }) {
+function ScrollableTab({
+  children,
+  fullWidth,
+}: {
+  children: ReactNode;
+  /** Runs table uses full page width. */
+  fullWidth?: boolean;
+}) {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-4xl px-6 py-8">{children}</div>
+      <div
+        className={cn(
+          "px-6 py-8",
+          fullWidth ? "w-full max-w-none" : "mx-auto max-w-4xl"
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -242,7 +233,7 @@ export function AgentWorkspaceShell({
       <BuilderDocumentProvider agent={agent}>
         <TopBarBreadcrumb backHref="/agents" backLabel="Agents" title={agent.name} />
         <AgentWorkspaceTopBarSlots />
-        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <AgentWorkspaceInner {...rest} />
         </div>
       </BuilderDocumentProvider>

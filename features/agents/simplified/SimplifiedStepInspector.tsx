@@ -4,7 +4,10 @@ import { X, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  InstructionTextareaWithVariables,
+  type VariableInsertGroups,
+} from "@/features/agents/shared/InstructionVariablePicker";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -144,24 +147,27 @@ function InstructionsField({
   onChange,
   placeholder,
   hint,
+  groups,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   hint?: string;
+  groups: VariableInsertGroups;
 }) {
   return (
     <div className="space-y-1">
       <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         Instructions
       </Label>
-      <Textarea
+      <InstructionTextareaWithVariables
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         placeholder={placeholder}
-        className="min-h-[140px] text-xs"
+        groups={groups}
+        hint={hint}
+        minHeightClass="min-h-[140px]"
       />
-      {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -337,7 +343,11 @@ function MessageTransformEditor({
   step: SimplifiedMessageStep | SimplifiedTransformStep;
 }) {
   const { updateStep } = useSimplifiedBuilder();
-  const { stateConfig } = useBuilderDocument();
+  const { stateConfig, envVars } = useBuilderDocument();
+  const variableGroups: VariableInsertGroups = {
+    inputs: envVars,
+    memory: stateConfig.fields,
+  };
 
   const isTransform = step.kind === "transform";
   const outputMode: OutputMode =
@@ -374,14 +384,15 @@ function MessageTransformEditor({
         onChange={(v) => updateStep(step.id, { instructions: v })}
         placeholder={
           isTransform
-            ? "Rewrite the user's message so downstream steps have a cleaner input. Use {{variableKey}} to inject working memory."
-            : "Tell the model how to respond. Use {{variableKey}} or {{env.keyName}} to inject values."
+            ? "Rewrite the user's message for downstream steps."
+            : "Tell the model how to respond to the user."
         }
         hint={
           isTransform
             ? "Transform replaces the user message for every step that comes after it."
             : "Message is what the user will see in chat."
         }
+        groups={variableGroups}
       />
 
       <OutputEditor
@@ -418,7 +429,11 @@ function MessageTransformEditor({
 
 function UpdateStateEditor({ step }: { step: SimplifiedUpdateStateStep }) {
   const { updateStep } = useSimplifiedBuilder();
-  const { stateConfig } = useBuilderDocument();
+  const { stateConfig, envVars } = useBuilderDocument();
+  const variableGroups: VariableInsertGroups = {
+    inputs: envVars,
+    memory: stateConfig.fields,
+  };
 
   function setSchema(fields: ExtractFieldSchema[]) {
     updateStep(step.id, { jsonSchema: fields });
@@ -436,6 +451,7 @@ function UpdateStateEditor({ step }: { step: SimplifiedUpdateStateStep }) {
         onChange={(v) => updateStep(step.id, { instructions: v })}
         placeholder="Extract these fields from the conversation + latest user message."
         hint="The model looks at the full conversation and latest message, then returns JSON matching the fields below."
+        groups={variableGroups}
       />
 
       <OutputEditor
@@ -605,6 +621,11 @@ function ParallelEditor({ step }: { step: SimplifiedParallelStep }) {
 
 function EndEditor({ step }: { step: SimplifiedEndStep }) {
   const { updateStep } = useSimplifiedBuilder();
+  const { stateConfig, envVars } = useBuilderDocument();
+  const variableGroups: VariableInsertGroups = {
+    inputs: envVars,
+    memory: stateConfig.fields,
+  };
   return (
     <div className="space-y-4">
       <LabelField
@@ -632,13 +653,12 @@ function EndEditor({ step }: { step: SimplifiedEndStep }) {
           <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Closing message (optional)
           </Label>
-          <Textarea
+          <InstructionTextareaWithVariables
             value={step.closingMessage ?? ""}
-            onChange={(e) =>
-              updateStep(step.id, { closingMessage: e.target.value })
-            }
-            className="min-h-[80px] text-xs"
+            onChange={(v) => updateStep(step.id, { closingMessage: v })}
+            groups={variableGroups}
             placeholder="A final message to send before closing."
+            minHeightClass="min-h-[80px]"
           />
         </div>
       )}

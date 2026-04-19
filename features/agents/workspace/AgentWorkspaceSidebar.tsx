@@ -306,8 +306,6 @@ function GenericSidebar() {
   const quickLinks = [
     { label: "Builder", tab: "builder" as const },
     { label: "Runs", tab: "runs" as const },
-    { label: "Dataset", tab: "dataset" as const },
-    { label: "Triggers", tab: "triggers" as const },
     { label: "Versions", tab: "versions" as const },
   ];
 

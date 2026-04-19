@@ -4,7 +4,6 @@ import { Plus, RefreshCw, Search, MessageSquare, Database, Trash2 } from "lucide
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StepInspectorShell } from "@/features/agents/shared/StepInspectorShell";
@@ -54,6 +53,11 @@ const TYPE_BADGE_STYLES: Record<string, string> = {
 import { AttachmentEditor } from "./AttachmentEditor";
 import { BranchInspectPanel, ParallelInspectPanel } from "./BranchParallelInspect";
 import { useChatBuilder } from "@/features/agents/workspace/ChatBuilderContext";
+import { useBuilderDocument } from "@/features/agents/workspace/BuilderDocumentContext";
+import {
+  InstructionTextareaWithVariables,
+  type VariableInsertGroups,
+} from "@/features/agents/shared/InstructionVariablePicker";
 
 interface BlockEditorProps {
   block: MessageBlock;
@@ -154,6 +158,11 @@ export function BlockEditor({
   selectedAttachmentId,
 }: BlockEditorProps) {
   const { canonicalUserBlockId } = useChatBuilder();
+  const { stateConfig, envVars } = useBuilderDocument();
+  const variableGroups: VariableInsertGroups = {
+    inputs: envVars,
+    memory: stateConfig.fields,
+  };
   const isUserAnchor = canonicalUserBlockId != null && block.id === canonicalUserBlockId;
   const showAttachmentSection =
     block.type !== "branch" && block.type !== "parallel" && block.type !== "goal";
@@ -221,11 +230,12 @@ export function BlockEditor({
             <Label className="text-[10px]">
               {block.type === "system" ? "System Instructions" : "Retrieval Description"}
             </Label>
-            <Textarea
-              className="text-xs min-h-[80px]"
+            <InstructionTextareaWithVariables
               value={block.content ?? ""}
-              onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+              onChange={(v) => onUpdate(block.id, { content: v })}
+              groups={variableGroups}
               placeholder={block.type === "system" ? "Enter system prompt..." : "Describe what to retrieve..."}
+              minHeightClass="min-h-[80px]"
             />
           </div>
         )}
@@ -233,11 +243,12 @@ export function BlockEditor({
         {block.type === "assistant" && (
           <div>
             <Label className="text-[10px]">Response Instructions (optional)</Label>
-            <Textarea
-              className="text-xs min-h-[80px]"
+            <InstructionTextareaWithVariables
               value={block.content ?? ""}
-              onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+              onChange={(v) => onUpdate(block.id, { content: v })}
+              groups={variableGroups}
               placeholder="Enter response instructions... Not needed if this block has a responder attachment."
+              minHeightClass="min-h-[80px]"
             />
             <p className="text-[9px] text-muted-foreground mt-1">
               Prefer a Responder attachment below for the main reply; use this field only for
@@ -251,6 +262,7 @@ export function BlockEditor({
             config={block.extractConfig ?? { instructions: "", outputSchema: [] }}
             onChange={(cfg) => onUpdate(block.id, { extractConfig: cfg })}
             orchestratorVars={orchestratorVars}
+            variableGroups={variableGroups}
           />
         )}
 
@@ -278,7 +290,7 @@ export function BlockEditor({
         {block.type === "goal" && (
           <GoalConfigEditor
             config={block.goalConfig ?? {
-              goalId: `goal-${Date.now()}`,
+              goalId: `goal-${block.id}`,
               name: "",
               conditions: [],
               conditionLogic: "all",
@@ -286,6 +298,7 @@ export function BlockEditor({
             }}
             onChange={(cfg) => onUpdate(block.id, { goalConfig: cfg })}
             orchestratorVars={orchestratorVars}
+            variableGroups={variableGroups}
           />
         )}
 
@@ -421,6 +434,7 @@ export function BlockEditor({
                 primitiveSlugs={primitiveSlugs}
                 orchestratorVars={orchestratorVars}
                 blockType={block.type}
+                variableGroups={variableGroups}
               />
             ))}
           </div>
@@ -439,10 +453,12 @@ function ExtractConfigEditor({
   config,
   onChange,
   orchestratorVars,
+  variableGroups,
 }: {
   config: ExtractBlockConfig;
   onChange: (cfg: ExtractBlockConfig) => void;
   orchestratorVars: VarDefinition[];
+  variableGroups: VariableInsertGroups;
 }) {
   function updateInstructions(instructions: string) {
     onChange({ ...config, instructions });
@@ -492,11 +508,12 @@ function ExtractConfigEditor({
 
       <div>
         <Label className="text-[10px]">Instructions</Label>
-        <Textarea
-          className="text-xs min-h-[60px]"
+        <InstructionTextareaWithVariables
           value={config.instructions}
-          onChange={(e) => updateInstructions(e.target.value)}
+          onChange={updateInstructions}
+          groups={variableGroups}
           placeholder="Tell the LLM what to extract from the user message..."
+          minHeightClass="min-h-[60px]"
         />
       </div>
 
@@ -634,10 +651,12 @@ function GoalConfigEditor({
   config,
   onChange,
   orchestratorVars,
+  variableGroups,
 }: {
   config: GoalBlockConfig;
   onChange: (cfg: GoalBlockConfig) => void;
   orchestratorVars: VarDefinition[];
+  variableGroups: VariableInsertGroups;
 }) {
   function update(patch: Partial<GoalBlockConfig>) {
     onChange({ ...config, ...patch });
@@ -785,12 +804,12 @@ function GoalConfigEditor({
         </div>
 
         {(config.onComplete.type === "close" || config.onComplete.type === "message") && (
-          <Textarea
-            className="text-xs min-h-[40px]"
+          <InstructionTextareaWithVariables
             value={config.onComplete.message ?? ""}
-            onChange={(e) => updateAction({ message: e.target.value })}
+            onChange={(v) => updateAction({ message: v })}
+            groups={variableGroups}
             placeholder={config.onComplete.type === "close" ? "Closing message (optional)" : "Message to send"}
-            rows={2}
+            minHeightClass="min-h-[40px]"
           />
         )}
 

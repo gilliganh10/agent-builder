@@ -97,7 +97,7 @@ export function AgentWorkspaceProvider({
     "inspect"
   );
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);

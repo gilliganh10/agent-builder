@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Bookmark, ChevronDown, ChevronUp, Loader2, Sparkles } from "lucide-react";
+import {
+  Bookmark,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import type {
   AgentMessageAction,
   AgentStructuredMessageContent,
@@ -106,20 +112,77 @@ export function ChatBubble({ entry, compact, onAction }: ChatBubbleProps) {
             )}
             style={{ backgroundColor: bgColor, color: textColor }}
           >
-            <div>{entry.content}</div>
-            {entry.secondaryContent ? (
-              <p
-                className={cn(
-                  "mt-2 border-t border-black/10 pt-2 text-[11px] leading-snug opacity-90 dark:border-white/15",
-                  compact ? "text-[10px]" : "text-xs"
-                )}
-              >
-                {entry.secondaryContent}
-              </p>
-            ) : null}
+            <PrimarySecondaryMessageBody
+              primary={entry.content}
+              secondary={entry.secondaryContent}
+              textColor={textColor}
+              compact={compact}
+            />
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** When the flow emits primary + secondary (e.g. JSON roles), secondary is revealed on click. */
+function PrimarySecondaryMessageBody({
+  primary,
+  secondary,
+  textColor,
+  compact,
+}: {
+  primary: string;
+  secondary?: string;
+  textColor: string;
+  compact?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!secondary?.trim()) {
+    return <div>{primary}</div>;
+  }
+
+  return (
+    <div className="space-y-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className={cn(
+          "w-full rounded-lg px-1 py-0.5 text-left transition-colors",
+          "border border-transparent hover:border-black/15 hover:bg-black/[0.07] dark:hover:border-white/20 dark:hover:bg-white/[0.08]",
+          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
+        )}
+        style={{ color: textColor }}
+      >
+        <span
+          className={cn(
+            "block underline decoration-dotted decoration-2 underline-offset-4",
+            compact ? "text-xs font-medium" : "text-sm font-medium",
+          )}
+        >
+          {primary}
+        </span>
+        <span className="mt-1 flex items-center gap-1 text-[10px] font-normal no-underline opacity-85">
+          <ChevronDown
+            className={cn("h-3 w-3 shrink-0 transition-transform", expanded && "rotate-180")}
+            aria-hidden
+          />
+          {expanded ? "Hide additional message" : "More — click to expand"}
+        </span>
+      </button>
+      {expanded ? (
+        <p
+          className={cn(
+            "mt-2 border-t border-black/15 pt-2 leading-snug opacity-95 dark:border-white/15",
+            compact ? "text-[10px]" : "text-xs",
+          )}
+          style={{ color: textColor }}
+        >
+          {secondary}
+        </p>
+      ) : null}
     </div>
   );
 }

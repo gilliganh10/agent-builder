@@ -43,6 +43,9 @@ function legacyToFlowRunOutput(obj: Record<string, unknown>): FlowRunOutput {
         events.push({ type: "message", nodeId: "unknown", content: entry, display: { nodeId: "unknown", name: "Agent", color: null, side: "left" } });
       } else if (entry && typeof entry === "object" && "content" in entry) {
         const m = entry as Record<string, unknown>;
+        const secondaryRaw = m.secondaryMessage ?? m.secondaryContent;
+        const secondaryContent =
+          typeof secondaryRaw === "string" ? secondaryRaw : undefined;
         events.push({
           type: "message",
           nodeId: (m.nodeId as string) ?? "unknown",
@@ -52,6 +55,7 @@ function legacyToFlowRunOutput(obj: Record<string, unknown>): FlowRunOutput {
               : summarizeStructuredMessageContent(
                 coerceStructuredMessageContent(m.structuredContent)
               ) ?? "",
+          ...(secondaryContent ? { secondaryContent } : {}),
           ...(coerceStructuredMessageContent(m.structuredContent)
             ? { structuredContent: coerceStructuredMessageContent(m.structuredContent) }
             : {}),

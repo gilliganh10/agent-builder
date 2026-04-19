@@ -43,7 +43,7 @@ export function NewFromTemplateButton({
       try {
         const { slug } = await createAgentFromTemplate(tenantId, template.id);
         setOpen(false);
-        router.push(`/agents/${slug}`);
+        router.push(`/agents/${slug}?tab=builder&subtab=plan`);
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to create agent");

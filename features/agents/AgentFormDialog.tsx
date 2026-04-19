@@ -11,8 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -28,7 +26,6 @@ import {
   policyFromModel,
   type ModelPolicy,
 } from "@/lib/agents/model-policy";
-import { allToolNames } from "@/lib/agents/tool-registry";
 import type { AgentDefinition } from "@/db/agents/schema";
 
 interface AgentFormDialogProps {
@@ -52,8 +49,8 @@ function agentToForm(a: AgentDefinition): AgentFormValues {
     name: a.name,
     slug: a.slug,
     description: a.description,
-    instructions: a.instructions,
-    allowedTools: a.allowedTools,
+    instructions: a.instructions ?? "",
+    allowedTools: Array.isArray(a.allowedTools) ? a.allowedTools : [],
     modelPolicy: policyFromModel(a.defaultModel),
     changelog: "",
   };
@@ -64,6 +61,25 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+/** Create: empty instructions/tools. Edit: preserve existing server fields. */
+function toServerPayload(
+  form: AgentFormValues,
+  existing?: AgentDefinition
+): AgentFormValues {
+  if (existing) {
+    return {
+      ...form,
+      instructions: existing.instructions ?? "",
+      allowedTools: Array.isArray(existing.allowedTools) ? existing.allowedTools : [],
+    };
+  }
+  return {
+    ...form,
+    instructions: "",
+    allowedTools: [],
+  };
 }
 
 export function AgentFormDialog({
@@ -80,8 +96,6 @@ export function AgentFormDialog({
     agent ? agentToForm(agent) : EMPTY_FORM
   );
 
-  const availableTools = allToolNames();
-
   useEffect(() => {
     if (open) {
       setForm(agent ? agentToForm(agent) : EMPTY_FORM);
@@ -89,10 +103,7 @@ export function AgentFormDialog({
     }
   }, [open, agent]);
 
-  function set<K extends keyof AgentFormValues>(
-    key: K,
-    value: AgentFormValues[K]
-  ) {
+  function set<K extends keyof AgentFormValues>(key: K, value: AgentFormValues[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -103,28 +114,26 @@ export function AgentFormDialog({
     }
   }
 
-  function toggleTool(tool: string) {
-    setForm((prev) => {
-      const tools = prev.allowedTools.includes(tool)
-        ? prev.allowedTools.filter((t) => t !== tool)
-        : [...prev.allowedTools, tool];
-      return { ...prev, allowedTools: tools };
-    });
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    const payload = toServerPayload(form, agent);
+    if (isEdit && agent) {
+      payload.changelog = form.changelog?.trim() || "Updated agent details";
+    }
+
     startTransition(async () => {
       try {
         if (isEdit && agent) {
-          await updateAgent(tenantId, agent.id, form);
+          await updateAgent(tenantId, agent.id, payload);
+          onOpenChange(false);
+          router.refresh();
         } else {
-          await createAgent(tenantId, form);
+          const created = await createAgent(tenantId, payload);
+          onOpenChange(false);
+          router.push(`/agents/${created.slug}?tab=builder&subtab=plan`);
         }
-        onOpenChange(false);
-        router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong.");
       }
@@ -133,9 +142,9 @@ export function AgentFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Agent" : "New Agent"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit agent" : "New agent"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
@@ -145,7 +154,7 @@ export function AgentFormDialog({
             </label>
             <Input
               required
-              placeholder="e.g. Code Reviewer"
+              placeholder="e.g. Support assistant"
               value={form.name}
               onChange={(e) => handleNameChange(e.target.value)}
             />
@@ -154,7 +163,7 @@ export function AgentFormDialog({
           <div className="space-y-1">
             <label className="text-sm font-medium">Slug</label>
             <Input
-              placeholder="code-reviewer"
+              placeholder="support-assistant"
               value={form.slug}
               onChange={(e) => set("slug", e.target.value)}
             />
@@ -163,49 +172,15 @@ export function AgentFormDialog({
           <div className="space-y-1">
             <label className="text-sm font-medium">Description</label>
             <textarea
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[60px] resize-y"
-              placeholder="Brief description of what this agent does..."
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[72px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              placeholder="What this agent is for…"
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">
-              System Instructions <span className="text-destructive">*</span>
-            </label>
-            <textarea
-              required
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[160px] resize-y"
-              placeholder="You are an AI assistant that..."
-              value={form.instructions}
-              onChange={(e) => set("instructions", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Allowed Tools</label>
-            <div className="grid grid-cols-2 gap-2 rounded-md border border-input p-3">
-              {availableTools.map((tool) => (
-                <div key={tool} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`tool-${tool}`}
-                    checked={form.allowedTools.includes(tool)}
-                    onCheckedChange={() => toggleTool(tool)}
-                  />
-                  <Label
-                    htmlFor={`tool-${tool}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {tool}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Model Policy</label>
+            <label className="text-sm font-medium">Model policy</label>
             <Select
               value={form.modelPolicy}
               onValueChange={(v) => set("modelPolicy", v as ModelPolicy)}
@@ -226,12 +201,9 @@ export function AgentFormDialog({
 
           {isEdit && (
             <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Changelog <span className="text-destructive">*</span>
-              </label>
+              <label className="text-sm font-medium">Changelog (optional)</label>
               <Input
-                required={isEdit}
-                placeholder="What changed in this version?"
+                placeholder="What changed (defaults to a short message if empty)"
                 value={form.changelog ?? ""}
                 onChange={(e) => set("changelog", e.target.value)}
               />
@@ -252,11 +224,11 @@ export function AgentFormDialog({
             <Button type="submit" disabled={isPending}>
               {isPending
                 ? isEdit
-                  ? "Saving\u2026"
-                  : "Creating\u2026"
+                  ? "Saving…"
+                  : "Creating…"
                 : isEdit
-                  ? "Save & Version"
-                  : "Create Agent"}
+                  ? "Save"
+                  : "Create"}
             </Button>
           </DialogFooter>
         </form>

@@ -54,7 +54,7 @@ export function FlowCanvasTab() {
   } = useFlowBuilder();
 
   return (
-    <div ref={reactFlowWrapper} className="relative h-full w-full">
+    <div ref={reactFlowWrapper} className="relative flex min-h-0 h-full min-w-0 flex-1 flex-col">
       {isProjection && (
         <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full border border-border/70 bg-background/90 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur">
           Read-only projection of the Plan

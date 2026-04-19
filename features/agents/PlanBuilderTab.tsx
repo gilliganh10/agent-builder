@@ -33,11 +33,9 @@ export function PlanBuilderTab() {
       <InputsObjectivesMemoryHub
         purpose={{
           name: agent.name,
-          description: agent.description,
           memoryFieldCount: stateConfig.fields.length,
           objectiveCount: stateConfig.goals.length,
           stepCount: bodyStepCount,
-          onOpenTest: () => switchBuilderSubtab("test"),
         }}
         envVars={envVars}
         onEnvVarsChange={setEnvVars}

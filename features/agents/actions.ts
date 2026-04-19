@@ -44,23 +44,26 @@ export async function createAgent(tenantId: string, values: AgentFormValues) {
   }
 
   const defaultModel = resolveModel(values.modelPolicy);
+  const instructions = values.instructions?.trim() ?? "";
+  const allowedTools = values.allowedTools ?? [];
 
   const agent = await agentRepository.create(tenantId, {
     name: values.name,
     slug,
     description: values.description,
     kind: "user_created",
-    instructions: values.instructions,
-    allowedTools: values.allowedTools,
+    instructions,
+    allowedTools,
     defaultModel,
     flowDefinition: values.flowDefinition,
     meta: { modelPolicy: values.modelPolicy },
+    mode: "conversational",
   });
 
   await agentRepository.createVersion(tenantId, agent.id, {
     version: 1,
-    instructions: values.instructions,
-    allowedTools: values.allowedTools,
+    instructions,
+    allowedTools,
     defaultModel,
     flowDefinition: values.flowDefinition,
     changelog: "Initial version",
@@ -86,12 +89,14 @@ export async function updateAgent(tenantId: string, id: string, values: AgentFor
   }
 
   const defaultModel = resolveModel(values.modelPolicy);
+  const instructions = values.instructions?.trim() ?? "";
+  const allowedTools = values.allowedTools ?? [];
 
   const updatePayload: Parameters<typeof agentRepository.update>[2] = {
     name: values.name,
     description: values.description,
-    instructions: values.instructions,
-    allowedTools: values.allowedTools,
+    instructions,
+    allowedTools,
     defaultModel,
     meta: { ...agent.meta, modelPolicy: values.modelPolicy },
   };
@@ -109,8 +114,8 @@ export async function updateAgent(tenantId: string, id: string, values: AgentFor
 
   await agentRepository.createVersion(tenantId, id, {
     version: nextVersion,
-    instructions: values.instructions,
-    allowedTools: values.allowedTools,
+    instructions,
+    allowedTools,
     defaultModel,
     flowDefinition: updated.flowDefinition,
     changelog: values.changelog || "Updated",

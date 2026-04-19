@@ -1,4 +1,5 @@
 import { GLOTTR_V3_TEMPLATE } from "./glottr-v3";
+import { JOKE_PERSUADER_TEMPLATE } from "./joke-persuader";
 import type { AgentTemplate } from "./types";
 
 /**
@@ -6,7 +7,10 @@ import type { AgentTemplate } from "./types";
  * Plan. Keep this list short — templates should be canonical, well-known
  * agents worth being the first example a new user sees.
  */
-export const AGENT_TEMPLATES: AgentTemplate[] = [GLOTTR_V3_TEMPLATE];
+export const AGENT_TEMPLATES: AgentTemplate[] = [
+  GLOTTR_V3_TEMPLATE,
+  JOKE_PERSUADER_TEMPLATE,
+];
 
 export function findAgentTemplate(id: string): AgentTemplate | undefined {
   return AGENT_TEMPLATES.find((t) => t.id === id);
@@ -14,3 +18,4 @@ export function findAgentTemplate(id: string): AgentTemplate | undefined {
 
 export type { AgentTemplate } from "./types";
 export { GLOTTR_V3_TEMPLATE } from "./glottr-v3";
+export { JOKE_PERSUADER_TEMPLATE } from "./joke-persuader";

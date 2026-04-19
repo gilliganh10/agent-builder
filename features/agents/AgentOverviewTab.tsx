@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Pencil, Trash2, Globe, Link2, Copy, Check, CheckCircle2, CircleDashed, GitBranch, PlayCircle, Database, Zap } from "lucide-react";
+import {
+  Lock,
+  Pencil,
+  Trash2,
+  Globe,
+  Link2,
+  Copy,
+  Check,
+  ExternalLink,
+  CheckCircle2,
+  CircleDashed,
+  GitBranch,
+  PlayCircle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +36,6 @@ import { policyFromModel, MODEL_POLICIES } from "@/lib/agents/model-policy";
 import type { AgentDefinition, AgentVersion, AgentMode } from "@/db/agents/schema";
 import { AgentFormDialog } from "./AgentFormDialog";
 import { AgentDeleteDialog } from "./AgentDeleteDialog";
-import { useTenant } from "@/lib/tenant-context";
 import { getPublicChatSettings } from "@/lib/agents/public-chat";
 import { canEditAgentDefinition, isEditableBuiltInAgent } from "@/lib/agents/agent-visibility";
 
@@ -35,7 +47,6 @@ interface AgentOverviewTabProps {
 export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps) {
   const { permissions } = useViewerMode();
   const router = useRouter();
-  const { tenantSlug } = useTenant();
   const { switchTab } = useAgentWorkspace();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -78,60 +89,43 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
     }
   }
 
-  const hasInstructions = !!agent.instructions?.trim();
   const hasFlow = !!agent.flowDefinition?.nodes?.length;
   const isPublished = !!agent.publishToken;
 
   const readinessItems = [
-    { label: "Instructions configured", done: hasInstructions },
-    { label: "Plan or graph builder defined", done: hasFlow },
+    { label: "Plan or graph defined", done: hasFlow },
     { label: "Published for external access", done: isPublished },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Readiness banner */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium">Readiness</p>
-              <div className="flex flex-wrap gap-3">
-                {readinessItems.map((item) => (
-                  <div key={item.label} className="flex items-center gap-1.5 text-xs">
-                    {item.done ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                    ) : (
-                      <CircleDashed className="h-3.5 w-3.5 text-muted-foreground/50" />
-                    )}
-                    <span className={item.done ? "text-foreground" : "text-muted-foreground"}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => switchTab("builder")}>
-                <GitBranch className="mr-1.5 h-3.5 w-3.5" />
-                Builder
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => switchTab("runs")}>
-                <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-                Runs
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => switchTab("dataset")}>
-                <Database className="mr-1.5 h-3.5 w-3.5" />
-                Dataset
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => switchTab("triggers")}>
-                <Zap className="mr-1.5 h-3.5 w-3.5" />
-                Triggers
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight">{agent.name}</h1>
+          {agent.description?.trim() ? (
+            <p className="text-sm text-muted-foreground">{agent.description}</p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Delete
+            </Button>
+          )}
+        </div>
+      </div>
 
       {isBuiltIn && !isEditableBuiltInAgent(agent) && (
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
@@ -147,133 +141,47 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        {canEdit && (
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
-          </Button>
-        )}
-        {canDelete && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            Delete
-          </Button>
-        )}
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <Row label="Slug" value={agent.slug} />
-            <Row label="Kind">
-              <Badge variant={isBuiltIn ? "secondary" : "default"}>
-                {isBuiltIn ? "Built-in" : "Custom"}
-              </Badge>
-            </Row>
-            <Row label="Model">
-              <span>
-                {policyConfig.label}{" "}
-                <span className="text-muted-foreground">
-                  ({agent.defaultModel})
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">Readiness</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-wrap gap-4">
+            {readinessItems.map((item) => (
+              <div key={item.label} className="flex items-center gap-1.5 text-sm">
+                {item.done ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+                ) : (
+                  <CircleDashed className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                )}
+                <span className={item.done ? "text-foreground" : "text-muted-foreground"}>
+                  {item.label}
                 </span>
-              </span>
-            </Row>
-            <Row label="Mode">
-              <Badge variant={agent.mode === "conversational" ? "default" : "secondary"}>
-                {agent.mode === "conversational" ? "Conversational" : "Stateless"}
-              </Badge>
-            </Row>
-            {latestVersion && (
-              <Row label="Version" value={`v${latestVersion.version}`} />
-            )}
-            <Row
-              label="Created"
-              value={new Date(agent.createdAt).toLocaleDateString()}
-            />
-            <Row
-              label="Updated"
-              value={new Date(agent.updatedAt).toLocaleDateString()}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Allowed Tools ({agent.allowedTools.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {agent.allowedTools.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tools configured.</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {agent.allowedTools.map((tool) => (
-                  <Badge key={tool} variant="outline" className="text-xs font-mono">
-                    {tool}
-                  </Badge>
-                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            ))}
+          </div>
 
-      {/* Runtime Mode + Publishing */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Runtime Mode</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Select
-              value={agent.mode}
-              onValueChange={async (value: AgentMode) => {
-                await fetch(`/api/agents/${agent.slug}`, {
-                  method: "PUT",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ mode: value, changelog: `Changed mode to ${value}` }),
-                });
-                router.refresh();
-              }}
-              disabled={!canEdit}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="stateless">Stateless</SelectItem>
-                <SelectItem value="conversational">Conversational</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              {agent.mode === "conversational"
-                ? "Multi-turn conversation with persisted context. Configure per-node persistence in the Flow tab."
-                : "Single-shot execution. Each run is independent."}
-            </p>
-          </CardContent>
-        </Card>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => switchTab("builder")}>
+              <GitBranch className="mr-1.5 h-3.5 w-3.5" />
+              Builder
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => switchTab("runs")}>
+              <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
+              Runs
+            </Button>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Globe className="h-4 w-4" />
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Globe className="h-4 w-4 text-muted-foreground" />
               Publishing
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            </div>
             {agent.publishToken ? (
               <>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge className="bg-green-600 text-white text-[10px]">Published</Badge>
                   {agent.publishedAt && (
                     <span className="text-xs text-muted-foreground">
@@ -281,14 +189,22 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded border bg-muted px-2 py-1 text-xs font-mono truncate">
-                    /chat/{agent.publishToken}
-                  </code>
+                <div className="flex max-w-xl flex-wrap items-center gap-2">
+                  <a
+                    href={`/chat/${agent.publishToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-w-0 flex-1 items-center gap-2 truncate rounded-md border border-border bg-muted/80 px-2.5 py-1.5 font-mono text-xs text-primary underline-offset-2 transition-colors hover:border-primary/50 hover:bg-muted hover:underline"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+                    <span className="truncate">/chat/{agent.publishToken}</span>
+                  </a>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 shrink-0"
+                    className="h-8 w-8 shrink-0"
+                    type="button"
+                    title="Copy URL"
                     onClick={async () => {
                       const url = `${window.location.origin}/chat/${agent.publishToken}`;
                       await navigator.clipboard.writeText(url);
@@ -296,7 +212,11 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
                       setTimeout(() => setCopied(false), 2000);
                     }}
                   >
-                    {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
                   </Button>
                 </div>
                 {canPublish && (
@@ -316,9 +236,9 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
                   </Button>
                 )}
                 <Separator />
-                <div className="flex items-start justify-between gap-4 rounded-md border border-border/70 bg-muted/30 px-3 py-3">
+                <div className="flex items-start justify-between gap-4 rounded-md border border-border bg-muted/40 px-3 py-3 dark:bg-muted/25">
                   <div className="space-y-1">
-                    <Label htmlFor="public-state-sidebar" className="text-sm font-medium text-[#222E50]">
+                    <Label htmlFor="public-state-sidebar" className="text-sm font-medium">
                       Show state sidebar in public chat
                     </Label>
                     <p className="text-xs text-muted-foreground">
@@ -330,7 +250,6 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
                     checked={showStateSidebar}
                     onCheckedChange={handlePublicChatSidebarToggle}
                     disabled={!canPublish || savingPublicChatSettings}
-                    className="data-[state=checked]:bg-[#222E50]"
                   />
                 </div>
               </>
@@ -339,9 +258,9 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
                 <p className="text-xs text-muted-foreground">
                   Publish this agent to get a public chat URL anyone can use.
                 </p>
-                <div className="flex items-start justify-between gap-4 rounded-md border border-border/70 bg-muted/30 px-3 py-3">
+                <div className="flex items-start justify-between gap-4 rounded-md border border-border bg-muted/40 px-3 py-3 dark:bg-muted/25">
                   <div className="space-y-1">
-                    <Label htmlFor="draft-public-state-sidebar" className="text-sm font-medium text-[#222E50]">
+                    <Label htmlFor="draft-public-state-sidebar" className="text-sm font-medium">
                       Show state sidebar in public chat
                     </Label>
                     <p className="text-xs text-muted-foreground">
@@ -353,14 +272,12 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
                     checked={showStateSidebar}
                     onCheckedChange={handlePublicChatSidebarToggle}
                     disabled={!canPublish || savingPublicChatSettings}
-                    className="data-[state=checked]:bg-[#222E50]"
                   />
                 </div>
                 {canPublish && (
                   <Button
                     size="sm"
                     disabled={publishing}
-                    className="bg-[#222E50] hover:bg-[#222E50]/90"
                     onClick={async () => {
                       setPublishing(true);
                       await fetch(`/api/agents/${agent.slug}/publish`, { method: "POST" });
@@ -374,20 +291,60 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
                 )}
               </>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">
-            System Instructions
-          </CardTitle>
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">Details</CardTitle>
         </CardHeader>
-        <CardContent>
-          <pre className="whitespace-pre-wrap rounded-md bg-muted p-4 text-xs font-mono leading-relaxed max-h-96 overflow-y-auto">
-            {agent.instructions}
-          </pre>
+        <CardContent className="space-y-4 text-sm">
+          <Row label="Slug" value={agent.slug} />
+          <Row label="Kind">
+            <Badge variant={isBuiltIn ? "secondary" : "default"}>
+              {isBuiltIn ? "Built-in" : "Custom"}
+            </Badge>
+          </Row>
+          <Row label="Model">
+            <span>
+              {policyConfig.label}{" "}
+              <span className="text-muted-foreground">({agent.defaultModel})</span>
+            </span>
+          </Row>
+          <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-muted-foreground">Runtime mode</span>
+              <Select
+                value={agent.mode}
+                onValueChange={async (value: AgentMode) => {
+                  await fetch(`/api/agents/${agent.slug}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mode: value, changelog: `Changed mode to ${value}` }),
+                  });
+                  router.refresh();
+                }}
+                disabled={!canEdit}
+              >
+                <SelectTrigger className="h-8 w-full max-w-[240px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="conversational">Conversational</SelectItem>
+                  <SelectItem value="stateless">Stateless</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {agent.mode === "conversational"
+                ? "Multi-turn conversation with persisted context."
+                : "Single-shot execution; each run is independent."}
+            </p>
+          </div>
+          {latestVersion && <Row label="Version" value={`v${latestVersion.version}`} />}
+          <Row label="Created" value={new Date(agent.createdAt).toLocaleDateString()} />
+          <Row label="Updated" value={new Date(agent.updatedAt).toLocaleDateString()} />
         </CardContent>
       </Card>
 
@@ -426,9 +383,9 @@ function Row({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      {children ?? <span>{value}</span>}
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <div className="min-w-0 text-right sm:text-right">{children ?? <span>{value}</span>}</div>
     </div>
   );
 }

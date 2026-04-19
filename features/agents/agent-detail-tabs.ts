@@ -7,17 +7,7 @@ export const AGENT_DETAIL_TABS = [
   { id: "versions", label: "Versions" },
 ] as const;
 
-/**
- * Tabs still reachable via URL / deep links but not shown in the primary strip.
- */
-export const SECONDARY_AGENT_DETAIL_TABS = [
-  { id: "dataset", label: "Dataset" },
-  { id: "triggers", label: "Triggers" },
-] as const;
-
-export type AgentDetailTabId =
-  | (typeof AGENT_DETAIL_TABS)[number]["id"]
-  | (typeof SECONDARY_AGENT_DETAIL_TABS)[number]["id"];
+export type AgentDetailTabId = (typeof AGENT_DETAIL_TABS)[number]["id"];
 
 export type BuilderSubtab = "plan" | "graph" | "test";
 
@@ -31,6 +21,8 @@ const LEGACY_TAB_MAP: Record<string, AgentDetailTabId> = {
   test: "builder",
   run: "runs",
   history: "runs",
+  dataset: "overview",
+  triggers: "overview",
 };
 
 const LEGACY_SUBTAB_MAP: Record<string, BuilderSubtab> = {
@@ -42,10 +34,7 @@ const LEGACY_SUBTAB_MAP: Record<string, BuilderSubtab> = {
   test: "test",
 };
 
-const ALL_TAB_IDS: readonly AgentDetailTabId[] = [
-  ...AGENT_DETAIL_TABS.map((t) => t.id),
-  ...SECONDARY_AGENT_DETAIL_TABS.map((t) => t.id),
-];
+const ALL_TAB_IDS: readonly AgentDetailTabId[] = AGENT_DETAIL_TABS.map((t) => t.id);
 
 export function isAgentDetailTabId(
   tab: string | undefined

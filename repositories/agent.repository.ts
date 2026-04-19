@@ -106,7 +106,7 @@ export const agentRepository = {
         flowDefinition: data.flowDefinition
           ? (data.flowDefinition as unknown as Prisma.InputJsonValue)
           : undefined,
-        mode: data.mode ?? "stateless",
+        mode: data.mode ?? "conversational",
         meta: data.meta as Prisma.InputJsonValue,
       },
     });
