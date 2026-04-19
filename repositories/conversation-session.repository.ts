@@ -41,7 +41,7 @@ interface RunWithSteps {
 }
 
 export const conversationSessionRepository = {
-  create: async (_tenantId: string, data: {
+  create: async (data: {
     agentDefinitionId: string;
     participantId?: string;
     meta?: Record<string, unknown>;
@@ -57,12 +57,12 @@ export const conversationSessionRepository = {
     return rowToSession(row);
   },
 
-  findById: async (_tenantId: string, id: string): Promise<ConversationSession | null> => {
+  findById: async (id: string): Promise<ConversationSession | null> => {
     const row = await db.conversationSession.findFirst({ where: { id } });
     return row ? rowToSession(row) : null;
   },
 
-  close: async (_tenantId: string, id: string): Promise<ConversationSession> => {
+  close: async (id: string): Promise<ConversationSession> => {
     await db.conversationSession.updateMany({
       where: { id },
       data: { status: "closed" },
@@ -71,7 +71,7 @@ export const conversationSessionRepository = {
     return rowToSession(row);
   },
 
-  getHistory: async (_tenantId: string, sessionId: string): Promise<RunWithSteps[]> => {
+  getHistory: async (sessionId: string): Promise<RunWithSteps[]> => {
     const rows = await db.agentRun.findMany({
       where: { sessionId, status: "completed" },
       orderBy: { createdAt: "asc" },

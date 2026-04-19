@@ -30,8 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useViewerMode } from "@/lib/viewer-mode-context";
-import { hasPermission } from "@/lib/permissions";
 import { policyFromModel, MODEL_POLICIES } from "@/lib/agents/model-policy";
 import type { AgentDefinition, AgentVersion, AgentMode } from "@/db/agents/schema";
 import { AgentFormDialog } from "./AgentFormDialog";
@@ -45,7 +43,6 @@ interface AgentOverviewTabProps {
 }
 
 export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps) {
-  const { permissions } = useViewerMode();
   const router = useRouter();
   const { switchTab } = useAgentWorkspace();
   const [editOpen, setEditOpen] = useState(false);
@@ -58,9 +55,9 @@ export function AgentOverviewTab({ agent, latestVersion }: AgentOverviewTabProps
   );
 
   const isBuiltIn = agent.kind === "built_in";
-  const canEdit = canEditAgentDefinition(agent) && hasPermission(permissions, "agents.create");
-  const canDelete = !isBuiltIn && hasPermission(permissions, "agents.manage");
-  const canPublish = hasPermission(permissions, "agents.manage");
+  const canEdit = canEditAgentDefinition(agent);
+  const canDelete = !isBuiltIn;
+  const canPublish = true;
 
   const policy = policyFromModel(agent.defaultModel);
   const policyConfig = MODEL_POLICIES[policy];

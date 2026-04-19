@@ -5,7 +5,6 @@ import { agentRepository } from "@/repositories/agent.repository";
 import { conversationSessionRepository } from "@/repositories/conversation-session.repository";
 import { executeAgentRun } from "@/lib/agents/runtime";
 import { resolveTools } from "@/lib/agents/tool-registry";
-import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { AgentSpec } from "@/db/agents/schema";
 import { createStreamSink, createSseResponse } from "@/lib/agents/streaming";
 
@@ -41,9 +40,8 @@ export async function POST(request: Request) {
 
     // Single-scope OSS build: no auth, so we attribute runs to a local user.
     const triggeredBy = "local@agent-builder";
-    const permissions = DEFAULT_PERMISSIONS;
 
-    const definition = await agentRepository.findBySlug("", agentSlug);
+    const definition = await agentRepository.findBySlug(agentSlug);
     if (!definition) {
       return NextResponse.json({ error: `Agent not found: ${agentSlug}` }, { status: 404 });
     }
@@ -63,7 +61,7 @@ export async function POST(request: Request) {
     let sessionId: string | undefined;
     if (agentMode === "conversational") {
       if (requestedSessionId) {
-        const existing = await conversationSessionRepository.findById("", requestedSessionId);
+        const existing = await conversationSessionRepository.findById(requestedSessionId);
         if (!existing || existing.agentDefinitionId !== agentSpec.definitionId) {
           return NextResponse.json({ error: "Invalid session ID" }, { status: 400 });
         }
@@ -72,7 +70,7 @@ export async function POST(request: Request) {
         }
         sessionId = existing.id;
       } else {
-        const newSession = await conversationSessionRepository.create("", {
+        const newSession = await conversationSessionRepository.create({
           agentDefinitionId: agentSpec.definitionId,
           participantId: triggeredBy,
         });
@@ -88,11 +86,9 @@ export async function POST(request: Request) {
       const runPromise = (async () => {
         try {
           const agentRun = await executeAgentRun({
-            tenantId: "",
             agentSpec,
             input,
             triggeredBy,
-            permissions,
             sessionId,
             flowDefinition,
             envOverrides,
@@ -127,11 +123,9 @@ export async function POST(request: Request) {
     }
 
     const agentRun = await executeAgentRun({
-      tenantId: "",
       agentSpec,
       input,
       triggeredBy,
-      permissions,
       sessionId,
       flowDefinition,
       envOverrides,

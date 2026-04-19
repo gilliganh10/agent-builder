@@ -8,7 +8,6 @@ import { resolveTools } from "@/lib/agents/tool-registry";
 import { filterPublicOverrides } from "@/lib/agents/flow/env";
 import { parseFlowRunOutput, eventsToMessages, extractRewrites } from "@/lib/agents/flow/output";
 import { publicRateLimitGuard } from "./rate-limit";
-import type { Permission } from "@/lib/permissions";
 import type { AgentSpec, AgentChatMessage, FlowDefinition, FlowRunOutput } from "@/db/agents/schema";
 import { buildConversationStatePayload, getPublicChatSettings } from "@/lib/agents/public-chat";
 import { createStreamSink, createSseResponse } from "@/lib/agents/streaming";
@@ -66,7 +65,6 @@ export async function POST(request: Request, ctx: RouteContext) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const tenantId = "";
     const publicChatSettings = getPublicChatSettings(agent.meta);
 
     const body = await request.json();
@@ -109,7 +107,7 @@ export async function POST(request: Request, ctx: RouteContext) {
     if (agent.mode === "conversational") {
       const participantId = `public:${hashIp(ip)}`;
       if (requestedSessionId) {
-        const existing = await conversationSessionRepository.findById(tenantId, requestedSessionId);
+        const existing = await conversationSessionRepository.findById(requestedSessionId);
         if (!existing || existing.agentDefinitionId !== agent.id) {
           return NextResponse.json({ error: "Invalid session" }, { status: 400 });
         }
@@ -119,7 +117,7 @@ export async function POST(request: Request, ctx: RouteContext) {
         sessionId = existing.id;
         sessionEnvOverrides = (existing.meta as Record<string, unknown>).envOverrides as Record<string, string> | undefined;
       } else {
-        const session = await conversationSessionRepository.create(tenantId, {
+        const session = await conversationSessionRepository.create({
           agentDefinitionId: agent.id,
           participantId,
           meta: envOverrides ? { envOverrides } : {},
@@ -129,7 +127,6 @@ export async function POST(request: Request, ctx: RouteContext) {
       }
     }
 
-    const publicPermissions: Permission[] = ["agents.read", "agents.run"];
     const triggeredBy = `public:${hashIp(ip)}`;
 
     // -----------------------------------------------------------------------
@@ -141,11 +138,9 @@ export async function POST(request: Request, ctx: RouteContext) {
       const runPromise = (async () => {
         try {
           const agentRun = await executeAgentRun({
-            tenantId,
             agentSpec,
             input: message,
             triggeredBy,
-            permissions: publicPermissions,
             sessionId,
             flowDefinition,
             envOverrides,
@@ -186,11 +181,9 @@ export async function POST(request: Request, ctx: RouteContext) {
     // Classic JSON path (default, backward-compatible)
     // -----------------------------------------------------------------------
     const agentRun = await executeAgentRun({
-      tenantId,
       agentSpec,
       input: message,
       triggeredBy,
-      permissions: publicPermissions,
       sessionId,
       flowDefinition,
       envOverrides,

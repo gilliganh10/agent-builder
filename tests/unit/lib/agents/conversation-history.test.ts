@@ -30,7 +30,7 @@ describe("buildConversationHistory", () => {
       },
     ] as never);
 
-    const messages = await buildConversationHistory("tenant_1", "csess_1", null);
+    const messages = await buildConversationHistory("csess_1", null);
 
     expect(messages).toEqual([
       { role: "user", content: "Remember my name is Daniel." },
@@ -104,7 +104,7 @@ describe("buildConversationHistory", () => {
       },
     ] as never);
 
-    const messages = await buildConversationHistory("tenant_1", "csess_1", flowDefinition);
+    const messages = await buildConversationHistory("csess_1", flowDefinition);
 
     expect(messages).toEqual([
       { role: "user", content: "Add a KPI for activation." },

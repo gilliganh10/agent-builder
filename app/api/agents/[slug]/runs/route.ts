@@ -14,8 +14,7 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const ctx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(ctx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
@@ -24,8 +23,8 @@ export async function GET(
     const wantDetail = url.searchParams.get("detail") === "1";
 
     const runs = wantDetail
-      ? await agentRunRepository.listByAgent(ctx.tenantId, agent.id)
-      : await agentRunRepository.listByAgentSummary(ctx.tenantId, agent.id);
+      ? await agentRunRepository.listByAgent(agent.id)
+      : await agentRunRepository.listByAgentSummary(agent.id);
 
     return NextResponse.json(runs);
   } catch (err) {

@@ -64,7 +64,6 @@ interface BlockEditorProps {
   onUpdate: (blockId: string, patch: Partial<MessageBlock>) => void;
   onDelete: (blockId: string) => void;
   onClose: () => void;
-  primitiveSlugs: string[];
   orchestratorVars: VarDefinition[];
   selectedAttachmentId: string | null;
 }
@@ -153,7 +152,6 @@ export function BlockEditor({
   onUpdate,
   onDelete,
   onClose,
-  primitiveSlugs,
   orchestratorVars,
   selectedAttachmentId,
 }: BlockEditorProps) {
@@ -431,7 +429,6 @@ export function BlockEditor({
                 attachment={att}
                 onChange={(patch) => updateAttachment(att.id, patch)}
                 onRemove={() => removeAttachment(att.id)}
-                primitiveSlugs={primitiveSlugs}
                 orchestratorVars={orchestratorVars}
                 blockType={block.type}
                 variableGroups={variableGroups}

@@ -419,7 +419,6 @@ function tryExtractOverride(
     mode: "override",
     label: rewriterNode.data.label ?? "Override",
     condition: condNode.data.condition,
-    ...(rewriterNode.data.primitiveId ? { primitiveId: rewriterNode.data.primitiveId } : {}),
     ...buildInlinePrimitiveFromNode(rewriterNode),
     ...(rewriterNode.data.displayName ? { displayName: rewriterNode.data.displayName } : {}),
     ...(rewriterNode.data.displayColor ? { displayColor: rewriterNode.data.displayColor } : {}),
@@ -454,7 +453,6 @@ function nodeToAttachment(node: FlowNode, mode: AttachmentMode): BlockAttachment
     id: node.id,
     mode,
     label: node.data.label ?? node.type,
-    ...(node.data.primitiveId ? { primitiveId: node.data.primitiveId } : {}),
     ...buildInlinePrimitiveFromNode(node),
     ...(node.data.varsRead?.length ? { varsRead: node.data.varsRead as string[] } : {}),
     ...(node.data.varsPatch && Object.keys(node.data.varsPatch).length > 0

@@ -8,13 +8,12 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const ctx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(ctx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    const versions = await agentRepository.getVersionHistory(ctx.tenantId, agent.id);
+    const versions = await agentRepository.getVersionHistory(agent.id);
     return NextResponse.json(versions);
   } catch (err) {
     return handleApiError(err);

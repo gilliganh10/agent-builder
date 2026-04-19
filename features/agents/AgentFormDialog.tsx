@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAgent, updateAgent, type AgentFormValues } from "./actions";
-import { useTenant } from "@/lib/tenant-context";
 import {
   ALL_MODEL_POLICIES,
   MODEL_POLICIES,
@@ -87,7 +86,6 @@ export function AgentFormDialog({
   onOpenChange,
   agent,
 }: AgentFormDialogProps) {
-  const { tenantId } = useTenant();
   const isEdit = !!agent;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -126,11 +124,11 @@ export function AgentFormDialog({
     startTransition(async () => {
       try {
         if (isEdit && agent) {
-          await updateAgent(tenantId, agent.id, payload);
+          await updateAgent(agent.id, payload);
           onOpenChange(false);
           router.refresh();
         } else {
-          const created = await createAgent(tenantId, payload);
+          const created = await createAgent(payload);
           onOpenChange(false);
           router.push(`/agents/${created.slug}?tab=builder&subtab=plan`);
         }

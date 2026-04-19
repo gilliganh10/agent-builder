@@ -28,7 +28,6 @@ const BlockAttachmentSchema = z.object({
   id: z.string(),
   mode: z.enum(["before", "after", "parallel", "override"]),
   label: z.string(),
-  primitiveId: z.string().optional(),
   inlinePrimitive: z
     .object({
       kind: z.enum([

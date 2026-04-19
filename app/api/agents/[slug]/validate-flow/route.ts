@@ -24,12 +24,8 @@ const ValidateFlowSchema = z.object({
   }),
 });
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function POST(request: Request) {
   try {
-        const ctx = { tenantId: "" } as const;
     const body = await request.json();
     const parsed = ValidateFlowSchema.safeParse(body);
     if (!parsed.success) {
@@ -43,7 +39,7 @@ export async function POST(
       );
     }
 
-    const allAgents = await agentRepository.list(ctx.tenantId);
+    const allAgents = await agentRepository.list();
     const allSlugs = allAgents.map((a) => a.slug);
 
     const result = validateFlow(

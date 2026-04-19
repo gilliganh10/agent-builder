@@ -40,7 +40,7 @@ export function BlockAttachmentCard({ attachment, onClick, onRemove }: BlockAtta
         {attachment.mode}
       </Badge>
       <span className="truncate font-medium">
-        {attachment.primitiveId ?? attachment.label}
+        {attachment.label}
       </span>
       {attachment.condition && (
         <span className="text-[9px] text-muted-foreground truncate">

@@ -213,12 +213,6 @@ function convertAttachment(
   att: BlockAttachment,
   ctx: Ctx
 ): string | null {
-  if (att.primitiveId && !att.inlinePrimitive) {
-    ctx.warnings.add(
-      `Attachment "${att.label}" referenced a saved primitive; rebuild it in the simplified builder.`
-    );
-    return null;
-  }
   const inline = att.inlinePrimitive;
   if (!inline) return null;
 

@@ -28,7 +28,6 @@ export interface ChatBuilderValidationResult {
 export function validateChatBuilder(
   spec: ChatBuilderSpec,
   orchestrator?: OrchestratorConfig,
-  primitiveSlugs?: string[],
   stateConfig?: AgentStateConfig
 ): ChatBuilderValidationResult {
   const errors: ChatBuilderValidationError[] = [];
@@ -90,7 +89,7 @@ export function validateChatBuilder(
       errors.push({ path: `${blockPath}.label`, message: "Block label is required" });
     }
 
-    validateBlockAttachments(block, i, errors, warnings, varKeys, lockedKeys, primitiveSlugs);
+    validateBlockAttachments(block, i, errors, warnings, varKeys, lockedKeys);
 
     if (block.type === "assistant") {
       validateAssistantBlockCompleteness(block, i, warnings);
@@ -101,11 +100,11 @@ export function validateChatBuilder(
     }
 
     if (block.type === "branch") {
-      validateBranchBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+      validateBranchBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
     }
 
     if (block.type === "parallel") {
-      validateParallelBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+      validateParallelBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
     }
 
     if (block.type === "goal") {
@@ -131,9 +130,7 @@ function validateAssistantBlockCompleteness(
   const hasContent = !!block.content?.trim();
   const hasParallels = block.attachments.some((a) => a.mode === "parallel");
   const hasResponderBefore = block.attachments.some(
-    (a) =>
-      a.mode === "before" &&
-      (a.inlinePrimitive?.kind === "responder" || a.primitiveId)
+    (a) => a.mode === "before" && a.inlinePrimitive?.kind === "responder"
   );
 
   if (!hasContent && !hasParallels && !hasResponderBefore) {
@@ -152,8 +149,7 @@ function validateBlockAttachments(
   errors: ChatBuilderValidationError[],
   warnings: ChatBuilderValidationDiagnostic[],
   varKeys: Set<string>,
-  lockedKeys: Set<string>,
-  primitiveSlugs?: string[]
+  lockedKeys: Set<string>
 ): void {
   const blockPath = `blocks[${blockIndex}]`;
 
@@ -204,17 +200,10 @@ function validateBlockAttachments(
       });
     }
 
-    if (!att.primitiveId && !att.inlinePrimitive) {
+    if (!att.inlinePrimitive) {
       errors.push({
         path: attPath,
-        message: "Attachment must reference a primitive (primitiveId) or define an inline primitive",
-      });
-    }
-
-    if (att.primitiveId && primitiveSlugs && !primitiveSlugs.includes(att.primitiveId)) {
-      errors.push({
-        path: `${attPath}.primitiveId`,
-        message: `Primitive not found: ${att.primitiveId}`,
+        message: "Attachment must define an inline primitive (kind and instructions)",
       });
     }
 
@@ -343,7 +332,6 @@ function validateBranchBlock(
   warnings: ChatBuilderValidationDiagnostic[],
   varKeys: Set<string>,
   lockedKeys: Set<string>,
-  primitiveSlugs?: string[],
   stateConfig?: AgentStateConfig,
   orchestrator?: OrchestratorConfig
 ): void {
@@ -372,13 +360,13 @@ function validateBranchBlock(
   for (let i = 0; i < cfg.trueBranch.length; i++) {
     const child = cfg.trueBranch[i];
     const childPath = `${blockPath}.branchConfig.trueBranch[${i}]`;
-    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
   }
 
   for (let i = 0; i < cfg.falseBranch.length; i++) {
     const child = cfg.falseBranch[i];
     const childPath = `${blockPath}.branchConfig.falseBranch[${i}]`;
-    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
   }
 }
 
@@ -389,7 +377,6 @@ function validateParallelBlock(
   warnings: ChatBuilderValidationDiagnostic[],
   varKeys: Set<string>,
   lockedKeys: Set<string>,
-  primitiveSlugs?: string[],
   stateConfig?: AgentStateConfig,
   orchestrator?: OrchestratorConfig
 ): void {
@@ -406,13 +393,13 @@ function validateParallelBlock(
   for (let i = 0; i < cfg.laneA.length; i++) {
     const child = cfg.laneA[i];
     const childPath = `${blockPath}.parallelConfig.laneA[${i}]`;
-    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
   }
 
   for (let i = 0; i < cfg.laneB.length; i++) {
     const child = cfg.laneB[i];
     const childPath = `${blockPath}.parallelConfig.laneB[${i}]`;
-    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+    validateNestedBlock(child, childPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
   }
 }
 
@@ -473,7 +460,6 @@ function validateNestedBlock(
   warnings: ChatBuilderValidationDiagnostic[],
   varKeys: Set<string>,
   lockedKeys: Set<string>,
-  primitiveSlugs?: string[],
   stateConfig?: AgentStateConfig,
   orchestrator?: OrchestratorConfig
 ): void {
@@ -491,16 +477,16 @@ function validateNestedBlock(
     validateExtractBlock(block, blockPath, errors, warnings, varKeys);
   }
   if (block.type === "branch") {
-    validateBranchBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+    validateBranchBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
   }
   if (block.type === "parallel") {
-    validateParallelBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, primitiveSlugs, stateConfig, orchestrator);
+    validateParallelBlock(block, blockPath, errors, warnings, varKeys, lockedKeys, stateConfig, orchestrator);
   }
   if (block.type === "assistant") {
     validateAssistantBlockCompleteness(block, 0, warnings);
   }
 
-  validateBlockAttachments(block, 0, errors, warnings, varKeys, lockedKeys, primitiveSlugs);
+  validateBlockAttachments(block, 0, errors, warnings, varKeys, lockedKeys);
 }
 
 function validateStateConfig(

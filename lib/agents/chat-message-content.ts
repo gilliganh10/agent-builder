@@ -78,8 +78,6 @@ function coerceCarouselItem(value: unknown): AgentCarouselItem | undefined {
   if (typeof value.id !== "string" || typeof value.title !== "string") return undefined;
 
   const primaryAction = coerceAgentMessageAction(value.primaryAction);
-  if (!primaryAction) return undefined;
-
   const secondaryAction = coerceAgentMessageAction(value.secondaryAction);
   const metadata = isRecord(value.metadata)
     ? (coerceJsonValue(value.metadata) as Record<string, JSONValue> | undefined)
@@ -95,7 +93,7 @@ function coerceCarouselItem(value: unknown): AgentCarouselItem | undefined {
     ...(typeof value.imageUrl === "string" || value.imageUrl === null
       ? { imageUrl: value.imageUrl }
       : {}),
-    primaryAction,
+    ...(primaryAction ? { primaryAction } : {}),
     ...(secondaryAction ? { secondaryAction } : {}),
   };
 }
@@ -106,18 +104,18 @@ export function coerceStructuredMessageContent(
   if (!isRecord(value) || typeof value.type !== "string") return undefined;
 
   if (value.type === "cta") {
-    const primaryAction = coerceAgentMessageAction(value.primaryAction);
-    if (!primaryAction || typeof value.title !== "string" || typeof value.body !== "string") {
+    if (typeof value.title !== "string" || typeof value.body !== "string") {
       return undefined;
     }
 
+    const primaryAction = coerceAgentMessageAction(value.primaryAction);
     const secondaryAction = coerceAgentMessageAction(value.secondaryAction);
 
     return {
       type: "cta",
       title: value.title,
       body: value.body,
-      primaryAction,
+      ...(primaryAction ? { primaryAction } : {}),
       ...(secondaryAction ? { secondaryAction } : {}),
     };
   }

@@ -12,13 +12,12 @@ type RouteContext = { params: Promise<{ slug: string }> };
 export async function GET(request: Request, ctx: RouteContext) {
   try {
     const { slug } = await ctx.params;
-    const tenantCtx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(tenantCtx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    const latestVersion = await agentRepository.getLatestVersion(tenantCtx.tenantId, agent.id);
+    const latestVersion = await agentRepository.getLatestVersion(agent.id);
     return NextResponse.json({ ...agent, latestVersion });
   } catch (err) {
     return handleApiError(err);
@@ -28,8 +27,7 @@ export async function GET(request: Request, ctx: RouteContext) {
 export async function PUT(request: Request, ctx: RouteContext) {
   try {
     const { slug } = await ctx.params;
-    const tenantCtx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(tenantCtx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
@@ -71,7 +69,7 @@ export async function PUT(request: Request, ctx: RouteContext) {
       ? { ...agent.meta, modelPolicy }
       : agent.meta;
 
-    const updatePayload: Parameters<typeof agentRepository.update>[2] = {
+    const updatePayload: Parameters<typeof agentRepository.update>[1] = {
       ...fields,
       defaultModel,
       mode,
@@ -79,18 +77,18 @@ export async function PUT(request: Request, ctx: RouteContext) {
     };
 
     if (flowDefinition !== undefined) {
-      updatePayload.flowDefinition = flowDefinition as Parameters<typeof agentRepository.update>[2]["flowDefinition"];
+      updatePayload.flowDefinition = flowDefinition as Parameters<typeof agentRepository.update>[1]["flowDefinition"];
     }
 
-    const updated = await agentRepository.update(tenantCtx.tenantId, agent.id, updatePayload);
+    const updated = await agentRepository.update(agent.id, updatePayload);
     if (!updated) {
       return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
 
-    const latestVersion = await agentRepository.getLatestVersion(tenantCtx.tenantId, agent.id);
+    const latestVersion = await agentRepository.getLatestVersion(agent.id);
     const nextVersion = latestVersion ? latestVersion.version + 1 : 1;
 
-    await agentRepository.createVersion(tenantCtx.tenantId, agent.id, {
+    await agentRepository.createVersion(agent.id, {
       version: nextVersion,
       instructions: updated.instructions,
       allowedTools: updated.allowedTools,
@@ -111,8 +109,7 @@ export async function PUT(request: Request, ctx: RouteContext) {
 export async function DELETE(request: Request, ctx: RouteContext) {
   try {
     const { slug } = await ctx.params;
-    const tenantCtx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(tenantCtx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
@@ -124,7 +121,7 @@ export async function DELETE(request: Request, ctx: RouteContext) {
       );
     }
 
-    await agentRepository.delete(tenantCtx.tenantId, agent.id);
+    await agentRepository.delete(agent.id);
     revalidatePath("/agents");
     revalidatePath(`/agents/${slug}`);
     return NextResponse.json({ deleted: true });

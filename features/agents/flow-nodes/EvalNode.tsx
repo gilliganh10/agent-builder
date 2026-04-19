@@ -17,17 +17,13 @@ export function EvalFlowNode({ selected, data }: NodeProps & { data: FlowNodeDat
         <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium text-muted-foreground">{data.label ?? "Eval"}</span>
       </div>
-      {data.primitiveId ? (
-        <Badge variant="outline" className="mt-1 text-xs">
-          {data.primitiveId}
-        </Badge>
-      ) : data.inlineInstructions ? (
+      {data.inlineInstructions ? (
         <Badge className="mt-1 text-xs bg-[#CDD5D1] text-foreground hover:bg-[#CDD5D1]/90">
           Inline
         </Badge>
       ) : (
         <p className="text-xs text-muted-foreground mt-1 italic">
-          No eval configured
+          Add instructions in the inspector
         </p>
       )}
       <p className="text-[10px] text-muted-foreground mt-0.5">out-of-band</p>

@@ -22,7 +22,6 @@ import {
   type Edge,
   MarkerType,
 } from "@xyflow/react";
-import { useTenant } from "@/lib/tenant-context";
 import {
   resolveStateConfig,
   stateConfigToOrchestrator,
@@ -40,7 +39,7 @@ import type {
   AgentStateConfig,
   VarDefinition,
 } from "@/db/agents/schema";
-import type { ChatSendResult, ChatActionResult } from "@/components/chat/ChatUI";
+import type { ChatSendResult } from "@/components/chat/ChatUI";
 import { parseFlowRunOutput, eventsToMessages, extractRewrites } from "@/lib/agents/flow/output";
 
 type FlowNode = Node<FlowNodeData>;
@@ -138,7 +137,6 @@ export interface FlowBuilderContextValue {
   orchestratorVars: VarDefinition[];
   envOverrides: Record<string, string>;
   agentSlugs: string[];
-  primitiveSlugs: string[];
   isV2: boolean;
   /**
    * True when the canvas is a read-only projection of the canonical
@@ -172,7 +170,6 @@ export interface FlowBuilderContextValue {
 
   // Chat test
   handleChatSend: (message: string, sessionId: string | undefined) => Promise<ChatSendResult>;
-  handleChatAction: (action: import("@/db/agents/schema").AgentMessageAction, sessionId: string | undefined) => Promise<ChatActionResult>;
 }
 
 const FlowBuilderContext = createContext<FlowBuilderContextValue | null>(null);
@@ -188,18 +185,15 @@ export function useFlowBuilder(): FlowBuilderContextValue {
 interface FlowBuilderProviderProps {
   agent: AgentDefinition;
   allAgentSlugs: string[];
-  allPrimitiveSlugs: string[];
   children: ReactNode;
 }
 
 export function FlowBuilderProvider({
   agent,
   allAgentSlugs,
-  allPrimitiveSlugs,
   children,
 }: FlowBuilderProviderProps) {
   const router = useRouter();
-  const { tenantSlug } = useTenant();
   const {
     setSaving,
     setDirty,
@@ -504,25 +498,7 @@ export function FlowBuilderProvider({
         error: data.error as string | undefined,
       };
     },
-    [agent.slug, envOverrides, tenantSlug]
-  );
-
-  const handleChatAction = useCallback(
-    async (
-      action: import("@/db/agents/schema").AgentMessageAction,
-      sessionId: string | undefined
-    ): Promise<ChatActionResult> => {
-      if (!sessionId) return { error: "Session required for message actions." };
-      const res = await fetch(`/api/agents/actions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentSlug: agent.slug, sessionId, action }),
-      });
-      const data = await res.json();
-      if (!res.ok) return { error: data.error ?? `Error ${res.status}` };
-      return { messages: data.messages ?? [], state: data.state, goals: data.goals, locks: data.locks };
-    },
-    [agent.slug, tenantSlug]
+    [agent.slug, envOverrides]
   );
 
   const value = useMemo<FlowBuilderContextValue>(
@@ -540,7 +516,6 @@ export function FlowBuilderProvider({
       orchestratorVars,
       envOverrides,
       agentSlugs,
-      primitiveSlugs: allPrimitiveSlugs,
       isV2,
       isProjection,
       detachFromSimplified,
@@ -557,16 +532,15 @@ export function FlowBuilderProvider({
       setStateConfig,
       setEnvOverrides,
       handleChatSend,
-      handleChatAction,
     }),
     [
       nodes, edges, selectedNodeId, selectedNode,
       envVars, stateConfig, orchestratorConfig, orchestratorVars, envOverrides,
-      agentSlugs, allPrimitiveSlugs, isV2, isProjection, detachFromSimplified,
+      agentSlugs, isV2, isProjection, detachFromSimplified,
       onNodesChange, onEdgesChange, onConnect, onNodeClick, onPaneClick,
       setSelectedNodeId, updateNodeData, deleteNode, addNode,
       setEnvVars, setStateConfig, setEnvOverrides,
-      handleChatSend, handleChatAction,
+      handleChatSend,
     ]
   );
 

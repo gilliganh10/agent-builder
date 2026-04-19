@@ -8,8 +8,6 @@ import type {
   OrchestratorState,
   RunEval,
 } from "@/db/agents/schema";
-import { primitiveRepository } from "@/repositories/primitive.repository";
-import { resolveTools } from "@/lib/agents/tool-registry";
 import { resolveModel, type ModelPolicy } from "@/lib/agents/model-policy";
 import { runAgent } from "@/lib/agents/llm-provider";
 import { runStreamedResponse } from "@/lib/agents/responses-stream";
@@ -38,34 +36,6 @@ async function buildPrimitiveSpec(
   const env = ctx.resolvedEnv ?? {};
   const vars = ctx.orchestratorState?.vars ?? {};
 
-  if (node.data.primitiveId) {
-    const prim = await primitiveRepository.findById(node.data.primitiveId);
-    if (!prim) {
-      const bySlug = node.data.primitiveId.includes("_")
-        ? null
-        : await primitiveRepository.findBySlug(node.data.primitiveId);
-      if (!bySlug) {
-        return { error: `Primitive not found: ${node.data.primitiveId}` };
-      }
-      return {
-        definitionId: bySlug.id,
-        name: bySlug.name,
-        slug: bySlug.slug,
-        instructions: interpolateAllTemplates(bySlug.instructions, env, vars),
-        tools: resolveTools(bySlug.allowedTools),
-        model: bySlug.defaultModel,
-      };
-    }
-    return {
-      definitionId: prim.id,
-      name: prim.name,
-      slug: prim.slug,
-      instructions: interpolateAllTemplates(prim.instructions, env, vars),
-      tools: resolveTools(prim.allowedTools),
-      model: prim.defaultModel,
-    };
-  }
-
   if (node.data.inlineInstructions) {
     const modelPolicy = (node.data.inlineModel as ModelPolicy) ?? "default";
     return {
@@ -78,7 +48,7 @@ async function buildPrimitiveSpec(
     };
   }
 
-  return { error: "No primitiveId or inlineInstructions configured" };
+  return { error: "No inlineInstructions configured for this node" };
 }
 
 function interpolateAllTemplates(
@@ -557,9 +527,7 @@ function prepareHistoryForNode(
 function buildAgentContext(ctx: NodeExecutionContext): AgentRunContext {
   return {
     runId: ctx.runId,
-    tenantId: ctx.tenantId,
     triggeredBy: ctx.triggeredBy,
-    permissions: ctx.permissions,
   };
 }
 

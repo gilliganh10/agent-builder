@@ -1,27 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Bookmark,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
-import type {
-  AgentMessageAction,
-  AgentStructuredMessageContent,
-} from "@/db/agents/schema";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import type { AgentStructuredMessageContent } from "@/db/agents/schema";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 
 export interface RenderableChatEntry {
   role: "user" | "user_rewritten" | "agent" | "system" | "error";
@@ -38,10 +21,9 @@ export interface RenderableChatEntry {
 interface ChatBubbleProps {
   entry: RenderableChatEntry;
   compact?: boolean;
-  onAction?: (action: AgentMessageAction) => Promise<void>;
 }
 
-export function ChatBubble({ entry, compact, onAction }: ChatBubbleProps) {
+export function ChatBubble({ entry, compact }: ChatBubbleProps) {
   const textSize = compact ? "text-xs" : "text-sm";
 
   if (entry.role === "user") {
@@ -101,7 +83,6 @@ export function ChatBubble({ entry, compact, onAction }: ChatBubbleProps) {
             content={entry.structuredContent}
             accentColor={entry.displayColor ?? "#946E83"}
             compact={compact}
-            onAction={onAction}
           />
         ) : (
           <div
@@ -187,35 +168,16 @@ function PrimarySecondaryMessageBody({
   );
 }
 
+/** Read-only display for structured assistant payloads (no interactive actions). */
 function StructuredMessageCard({
   content,
   accentColor,
   compact,
-  onAction,
 }: {
   content: AgentStructuredMessageContent;
   accentColor: string;
   compact?: boolean;
-  onAction?: (action: AgentMessageAction) => Promise<void>;
 }) {
-  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
-  const [resolvedAction, setResolvedAction] = useState<AgentMessageAction | null>(null);
-
-  const disabled = pendingActionId !== null || resolvedAction !== null || !onAction;
-
-  async function handleAction(action: AgentMessageAction) {
-    if (!onAction || disabled) return;
-    setPendingActionId(action.id);
-    try {
-      await onAction(action);
-      setResolvedAction(action);
-    } catch {
-      setResolvedAction(null);
-    } finally {
-      setPendingActionId(null);
-    }
-  }
-
   return (
     <div
       className="overflow-hidden rounded-[24px] border bg-card text-card-foreground shadow-sm"
@@ -227,36 +189,18 @@ function StructuredMessageCard({
       >
         <Sparkles className="h-3.5 w-3.5" style={{ color: accentColor }} />
         <span className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: accentColor }}>
-          Learning opportunity
+          Structured
         </span>
       </div>
 
       {content.type === "cta" ? (
-        <div className="space-y-3 p-4">
-          <div className="space-y-1">
-            <h4 className={compact ? "text-sm font-semibold" : "text-base font-semibold"}>
-              {content.title}
-            </h4>
-            <p className={compact ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>
-              {content.body}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <ActionButton
-              action={content.primaryAction}
-              pendingActionId={pendingActionId}
-              disabled={disabled}
-              onClick={handleAction}
-            />
-            {content.secondaryAction && (
-              <ActionButton
-                action={content.secondaryAction}
-                pendingActionId={pendingActionId}
-                disabled={disabled}
-                onClick={handleAction}
-              />
-            )}
-          </div>
+        <div className="space-y-2 p-4">
+          <h4 className={compact ? "text-sm font-semibold" : "text-base font-semibold"}>
+            {content.title}
+          </h4>
+          <p className={compact ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>
+            {content.body}
+          </p>
         </div>
       ) : (
         <div className="space-y-3 p-4">
@@ -271,114 +215,42 @@ function StructuredMessageCard({
             )}
           </div>
 
-          <div className={content.items.length > 1 ? "px-10" : ""}>
-            <Carousel
-              opts={{ align: "start", loop: false }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {content.items.map((item) => (
-                  <CarouselItem key={item.id}>
-                    <div className="rounded-2xl border border-border/60 bg-background p-4">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h5 className="text-sm font-semibold">{item.title}</h5>
-                          {item.badge && (
-                            <Badge variant="outline" className="text-[10px]">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </div>
-                        {item.subtitle && (
-                          <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                            {item.subtitle}
-                          </p>
-                        )}
-                        {item.description && (
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                        )}
-                        {item.metadata && Object.keys(item.metadata).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {Object.entries(item.metadata).map(([key, value]) => (
-                              <Badge key={key} variant="secondary" className="text-[10px]">
-                                {key}: {String(value)}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <ActionButton
-                          action={item.primaryAction}
-                          pendingActionId={pendingActionId}
-                          disabled={disabled}
-                          onClick={handleAction}
-                        />
-                        {item.secondaryAction && (
-                          <ActionButton
-                            action={item.secondaryAction}
-                            pendingActionId={pendingActionId}
-                            disabled={disabled}
-                            onClick={handleAction}
-                          />
-                        )}
-                      </div>
+          <div className="space-y-3">
+            {content.items.map((item) => (
+              <div key={item.id} className="rounded-2xl border border-border/60 bg-background p-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h5 className="text-sm font-semibold">{item.title}</h5>
+                    {item.badge && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </div>
+                  {item.subtitle && (
+                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                      {item.subtitle}
+                    </p>
+                  )}
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  )}
+                  {item.metadata && Object.keys(item.metadata).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(item.metadata).map(([key, value]) => (
+                        <Badge key={key} variant="secondary" className="text-[10px]">
+                          {key}: {String(value)}
+                        </Badge>
+                      ))}
                     </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              {content.items.length > 1 && (
-                <>
-                  <CarouselPrevious className="-left-4 h-8 w-8 border-border/70 bg-background" />
-                  <CarouselNext className="-right-4 h-8 w-8 border-border/70 bg-background" />
-                </>
-              )}
-            </Carousel>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
-
-      {resolvedAction && (
-        <div className="border-t bg-muted/40 px-4 py-2 text-[11px] text-muted-foreground">
-          Selected: <span className="font-medium text-foreground">{resolvedAction.label}</span>
-        </div>
-      )}
     </div>
-  );
-}
-
-function ActionButton({
-  action,
-  pendingActionId,
-  disabled,
-  onClick,
-}: {
-  action: AgentMessageAction;
-  pendingActionId: string | null;
-  disabled: boolean;
-  onClick: (action: AgentMessageAction) => Promise<void>;
-}) {
-  const variant = action.variant ?? "primary";
-  const buttonVariant = variant === "ghost"
-    ? "ghost"
-    : variant === "secondary"
-      ? "outline"
-      : "default";
-
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant={buttonVariant}
-      className={variant === "primary" ? "bg-primary text-primary-foreground hover:bg-primary/90" : undefined}
-      disabled={disabled}
-      onClick={() => void onClick(action)}
-    >
-      {pendingActionId === action.id ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-      {action.id.includes("save") ? <Bookmark className="mr-1.5 h-3.5 w-3.5" /> : null}
-      {action.label}
-    </Button>
   );
 }
 

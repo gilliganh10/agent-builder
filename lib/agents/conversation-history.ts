@@ -32,11 +32,10 @@ const AGENT_LIKE_TYPES = new Set<string>(["agent", ...V2_NODE_TYPES]);
  * are excluded.
  */
 export async function buildConversationHistory(
-  _tenantId: string,
   sessionId: string,
   flowDefinition: FlowDefinition | null | undefined
 ): Promise<ConversationMessage[]> {
-  const runs = await conversationSessionRepository.getHistory(_tenantId, sessionId);
+  const runs = await conversationSessionRepository.getHistory(sessionId);
   if (runs.length === 0) return [];
 
   const nodeMap = new Map<string, FlowNode>();

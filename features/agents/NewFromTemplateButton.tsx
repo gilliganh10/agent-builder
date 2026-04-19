@@ -12,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useTenant } from "@/lib/tenant-context";
 import { AGENT_TEMPLATES, type AgentTemplate } from "@/lib/agents/templates";
 import { createAgentFromTemplate } from "./actions";
 
@@ -30,7 +29,6 @@ export function NewFromTemplateButton({
   className,
 }: NewFromTemplateButtonProps) {
   const router = useRouter();
-  const { tenantId } = useTenant();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +39,7 @@ export function NewFromTemplateButton({
     setPendingId(template.id);
     startTransition(async () => {
       try {
-        const { slug } = await createAgentFromTemplate(tenantId, template.id);
+        const { slug } = await createAgentFromTemplate(template.id);
         setOpen(false);
         router.push(`/agents/${slug}?tab=builder&subtab=plan`);
         router.refresh();

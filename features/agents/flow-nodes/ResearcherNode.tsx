@@ -13,17 +13,13 @@ export function ResearcherFlowNode({ selected, data }: NodeProps & { data: FlowN
         <Search className="h-4 w-4 text-[#222E50]" />
         <span className="text-sm font-medium">{data.label ?? "Researcher"}</span>
       </div>
-      {data.primitiveId ? (
-        <Badge variant="outline" className="mt-1 text-xs">
-          {data.primitiveId}
-        </Badge>
-      ) : data.inlineInstructions ? (
+      {data.inlineInstructions ? (
         <Badge className="mt-1 text-xs bg-[#946E83] hover:bg-[#946E83]/90">
           Inline
         </Badge>
       ) : (
         <p className="text-xs text-muted-foreground mt-1 italic">
-          No primitive selected
+          Add instructions in the inspector
         </p>
       )}
     </FlowNodeShell>

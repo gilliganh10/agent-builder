@@ -12,8 +12,7 @@ export async function POST(
 ) {
   try {
     const { slug } = await params;
-    const ctx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(ctx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
@@ -27,7 +26,7 @@ export async function POST(
     }
 
     const token = generateId("pub").replace(/^pub_/, "");
-    const updated = await agentRepository.publish(ctx.tenantId, agent.id, token);
+    const updated = await agentRepository.publish(agent.id, token);
 
     return NextResponse.json(
       {
@@ -51,8 +50,7 @@ export async function DELETE(
 ) {
   try {
     const { slug } = await params;
-    const ctx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(ctx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
@@ -61,7 +59,7 @@ export async function DELETE(
       return NextResponse.json({ unpublished: true });
     }
 
-    await agentRepository.unpublish(ctx.tenantId, agent.id);
+    await agentRepository.unpublish(agent.id);
     return NextResponse.json({ unpublished: true });
   } catch (err) {
     return handleApiError(err);

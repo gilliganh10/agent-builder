@@ -77,10 +77,6 @@ function addEdge(
 
 function resolveAttachmentNodeType(att: BlockAttachment): FlowNodeType {
   if (att.inlinePrimitive?.kind) return att.inlinePrimitive.kind;
-  if (att.primitiveId) {
-    if (att.mode === "override") return "rewriter";
-    return "researcher";
-  }
   return "researcher";
 }
 
@@ -112,9 +108,6 @@ function renderOutputContract(schema: ExtractFieldSchema[]): string {
 function buildAttachmentNodeData(att: BlockAttachment): FlowNodeData {
   const data: FlowNodeData = { label: att.label };
 
-  if (att.primitiveId) {
-    data.primitiveId = att.primitiveId;
-  }
   if (att.inlinePrimitive) {
     const baseInstructions = att.inlinePrimitive.instructions;
     const effectiveSchema = att.outputSchema
@@ -293,7 +286,7 @@ function compileAssistantBlock(ctx: CompilerContext, block: MessageBlock): void 
   // Path 2: BEFORE attachments -- check if last one is a responder
   if (befores.length > 0) {
     const lastBefore = befores[befores.length - 1];
-    const lastIsResponder = isResponderAttachment(lastBefore) || lastBefore.primitiveId;
+    const lastIsResponder = isResponderAttachment(lastBefore);
 
     if (lastIsResponder) {
       // Emit all BEFOREs except the last

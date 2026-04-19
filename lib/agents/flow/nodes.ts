@@ -1,4 +1,3 @@
-import type { Permission } from "@/lib/permissions";
 import type {
   FlowNode,
   ConditionConfig,
@@ -26,10 +25,7 @@ import { interpolateTemplate } from "./env";
 
 export interface NodeExecutionContext {
   runId: string;
-  tenantId: string;
   triggeredBy: string;
-  permissions: Permission[];
-  projectId?: string;
   conversationHistory?: ConversationMessage[];
   resolvedEnv?: Record<string, string>;
   orchestratorState?: OrchestratorState;
@@ -89,8 +85,6 @@ export async function executeToolNode(
   const agentRunContext: AgentRunContext = {
     runId: ctx.runId,
     triggeredBy: ctx.triggeredBy,
-    permissions: ctx.permissions,
-    tenantId: ctx.tenantId,
   };
 
   const runCtx = new RunContext<AgentRunContext>(agentRunContext);
@@ -181,7 +175,7 @@ export async function executeAgentNode(
       model: resolveModel(modelPolicy),
     };
   } else if (node.data.agentSlug) {
-    const definition = await agentRepository.findBySlug(ctx.tenantId, node.data.agentSlug);
+    const definition = await agentRepository.findBySlug(node.data.agentSlug);
     if (!definition) {
       return { output: {}, durationMs: 0, status: "failed", error: `Agent not found: ${node.data.agentSlug}` };
     }
@@ -202,9 +196,7 @@ export async function executeAgentNode(
 
   const agentRunContext: AgentRunContext = {
     runId: ctx.runId,
-    tenantId: ctx.tenantId,
     triggeredBy: ctx.triggeredBy,
-    permissions: ctx.permissions,
   };
 
   // When conversation history is available, pass it as a message array

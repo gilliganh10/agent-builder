@@ -34,7 +34,6 @@ function GraphRightPanel({ mode }: { mode: RightPanelMode }) {
     updateNodeData,
     deleteNode,
     agentSlugs,
-    primitiveSlugs,
     orchestratorVars,
   } = useFlowBuilder();
 
@@ -45,7 +44,6 @@ function GraphRightPanel({ mode }: { mode: RightPanelMode }) {
           <FlowNodeEditor
             node={selectedNode}
             agentSlugs={agentSlugs}
-            primitiveSlugs={primitiveSlugs}
             orchestratorVars={orchestratorVars}
             onUpdate={updateNodeData}
             onDelete={deleteNode}

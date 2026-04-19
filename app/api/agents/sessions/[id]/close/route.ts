@@ -8,13 +8,12 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const ctx = { tenantId: "" } as const;
-    const existing = await conversationSessionRepository.findById(ctx.tenantId, id);
+    const existing = await conversationSessionRepository.findById(id);
     if (!existing) {
       return NextResponse.json({ error: "Invalid session ID" }, { status: 404 });
     }
 
-    const closed = await conversationSessionRepository.close(ctx.tenantId, id);
+    const closed = await conversationSessionRepository.close(id);
     return NextResponse.json({ ok: true, session: closed });
   } catch (err) {
     return handleApiError(err);

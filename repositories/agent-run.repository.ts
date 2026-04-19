@@ -18,11 +18,6 @@ import {
   emitProposalStatusUpdated,
 } from "@/lib/agents/streaming/proposal-lifecycle-bus";
 
-// ---------------------------------------------------------------------------
-// Single-scope repository. Function signatures still accept `tenantId` so
-// existing runtime call sites compile unchanged, but the value is ignored.
-// ---------------------------------------------------------------------------
-
 type PrismaRunRow = Awaited<ReturnType<typeof db.agentRun.findUniqueOrThrow>>;
 type PrismaStepRow = Awaited<ReturnType<typeof db.runStep.findUniqueOrThrow>>;
 type PrismaArtifactRow = Awaited<
@@ -119,7 +114,7 @@ const RUN_INCLUDE = {
 } as const;
 
 export const agentRunRepository = {
-  create: async (_tenantId: string, data: {
+  create: async (data: {
     agentDefinitionId: string;
     agentVersionId?: string;
     sessionId?: string;
@@ -143,7 +138,7 @@ export const agentRunRepository = {
     return rowToRun(row);
   },
 
-  updateStatus: async (_tenantId: string, id: string, status: RunStatus): Promise<void> => {
+  updateStatus: async (id: string, status: RunStatus): Promise<void> => {
     await db.agentRun.updateMany({
       where: { id },
       data: { status },
@@ -151,7 +146,6 @@ export const agentRunRepository = {
   },
 
   complete: async (
-    _tenantId: string,
     id: string,
     result: {
       finalOutput: string;
@@ -191,7 +185,7 @@ export const agentRunRepository = {
     return rowToRun(row);
   },
 
-  fail: async (_tenantId: string, id: string, error: string): Promise<AgentRun> => {
+  fail: async (id: string, error: string): Promise<AgentRun> => {
     await db.agentRun.updateMany({
       where: { id },
       data: { status: "failed", error },
@@ -203,7 +197,7 @@ export const agentRunRepository = {
     return rowToRun(row);
   },
 
-  addStep: async (_tenantId: string, data: {
+  addStep: async (data: {
     runId: string;
     stepIndex: number;
     kind: StepKind;
@@ -241,7 +235,7 @@ export const agentRunRepository = {
     return rowToStep(row);
   },
 
-  addArtifact: async (_tenantId: string, data: {
+  addArtifact: async (data: {
     id?: string;
     runId: string;
     kind: ArtifactKind;
@@ -269,7 +263,6 @@ export const agentRunRepository = {
   },
 
   applyArtifact: async (
-    _tenantId: string,
     id: string,
     appliedBy: string,
     previousData?: Record<string, unknown>,
@@ -295,7 +288,6 @@ export const agentRunRepository = {
   },
 
   rejectArtifact: async (
-    _tenantId: string,
     id: string,
     reason?: string,
     rejectedBy?: string,
@@ -319,7 +311,7 @@ export const agentRunRepository = {
     return artifact;
   },
 
-  ignoreArtifacts: async (_tenantId: string, ids: string[]): Promise<void> => {
+  ignoreArtifacts: async (ids: string[]): Promise<void> => {
     await db.runArtifact.updateMany({
       where: {
         id: { in: ids },
@@ -337,18 +329,17 @@ export const agentRunRepository = {
     }
   },
 
-  findArtifactsByIds: async (_tenantId: string, ids: string[]): Promise<RunArtifact[]> => {
+  findArtifactsByIds: async (ids: string[]): Promise<RunArtifact[]> => {
     const rows = await db.runArtifact.findMany({ where: { id: { in: ids } } });
     return rows.map(rowToArtifact);
   },
 
-  findArtifactById: async (_tenantId: string, id: string): Promise<RunArtifact | null> => {
+  findArtifactById: async (id: string): Promise<RunArtifact | null> => {
     const row = await db.runArtifact.findFirst({ where: { id } });
     return row ? rowToArtifact(row) : null;
   },
 
   mergeArtifactProposalOutcome: async (
-    _tenantId: string,
     id: string,
     merger: (prev: Record<string, unknown> | null) => Record<string, unknown>
   ): Promise<RunArtifact> => {
@@ -366,7 +357,7 @@ export const agentRunRepository = {
     return rowToArtifact(updated);
   },
 
-  findById: async (_tenantId: string, id: string): Promise<AgentRun | null> => {
+  findById: async (id: string): Promise<AgentRun | null> => {
     const row = await db.agentRun.findFirst({
       where: { id },
       include: RUN_INCLUDE,
@@ -374,7 +365,7 @@ export const agentRunRepository = {
     return row ? rowToRun(row) : null;
   },
 
-  listByAgent: async (_tenantId: string, agentDefinitionId: string): Promise<AgentRun[]> => {
+  listByAgent: async (agentDefinitionId: string): Promise<AgentRun[]> => {
     const rows = await db.agentRun.findMany({
       where: { agentDefinitionId },
       orderBy: { createdAt: "desc" },
@@ -384,7 +375,6 @@ export const agentRunRepository = {
   },
 
   listByAgentSummary: async (
-    _tenantId: string,
     agentDefinitionId: string,
     opts?: { take?: number }
   ): Promise<AgentRun[]> => {
@@ -397,7 +387,7 @@ export const agentRunRepository = {
     return rows.map((row) => rowToRun(row));
   },
 
-  listByUser: async (_tenantId: string, triggeredBy: string): Promise<AgentRun[]> => {
+  listByUser: async (triggeredBy: string): Promise<AgentRun[]> => {
     const rows = await db.agentRun.findMany({
       where: { triggeredBy },
       orderBy: { createdAt: "desc" },
@@ -409,8 +399,7 @@ export const agentRunRepository = {
   /**
    * Workspace-wide run list for the agents hub (paginated).
    */
-  listForTenantSummary: async (
-    _tenantId: string,
+  listRunsSummary: async (
     opts: {
       take?: number;
       skip?: number;

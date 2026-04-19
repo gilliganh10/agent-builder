@@ -30,7 +30,6 @@ import {
 import type {
   AgentChatMessage,
   AgentConversationGoalState,
-  AgentMessageAction,
   AgentMode,
   EnvVarDefinition,
 } from "@/db/agents/schema";
@@ -379,6 +378,9 @@ export function PublicChatClient({
                         ? ("system" as const)
                         : ("agent" as const),
                     content: m.content,
+                    ...(m.secondaryContent
+                      ? { secondaryContent: m.secondaryContent }
+                      : {}),
                     structuredContent: m.structuredContent,
                     displayName: m.displayName,
                     displayColor: m.displayColor,
@@ -528,57 +530,6 @@ export function PublicChatClient({
     }
   };
 
-  const handleAction = useCallback(
-    async (action: AgentMessageAction) => {
-      if (!sessionId) {
-        const message = "Session required for message actions.";
-        setEntries((prev) => [...prev, { role: "error", content: message }]);
-        throw new Error(message);
-      }
-
-      const res = await fetch(`/api/public/chat/${token}/actions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, action }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const message = data.error ?? `Error ${res.status}`;
-        setEntries((prev) => [...prev, { role: "error", content: message }]);
-        throw new Error(message);
-      }
-
-      applyStatePayload({
-        state: data.state,
-        goals: data.goals,
-        locks: data.locks,
-      });
-
-      const messages: AgentChatMessage[] = data.messages ?? [];
-      if (messages.length > 0) {
-        setEntries((prev) => [
-          ...prev,
-          ...messages.map((message) => ({
-            role:
-              message.displayName === "System"
-                ? ("system" as const)
-                : ("agent" as const),
-            content: message.content,
-            ...(message.secondaryContent
-              ? { secondaryContent: message.secondaryContent }
-              : {}),
-            structuredContent: message.structuredContent,
-            displayName: message.displayName,
-            displayColor: message.displayColor,
-            displaySide: message.displaySide,
-          })),
-        ]);
-      }
-    },
-    [applyStatePayload, sessionId, token],
-  );
-
   return (
     <div className="relative flex h-full min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(34,46,80,0.08),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(240,241,243,0.96))]">
       <div className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 overflow-hidden px-4 py-4 md:px-6 md:py-6">
@@ -609,7 +560,7 @@ export function PublicChatClient({
               ) : (
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
                   {entries.map((entry, i) => (
-                    <ChatBubble key={i} entry={entry} onAction={handleAction} />
+                    <ChatBubble key={i} entry={entry} />
                   ))}
 
                   {loading ? (

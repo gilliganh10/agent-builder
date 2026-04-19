@@ -8,8 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const ctx = { tenantId: "" } as const;
-    const run = await agentRunRepository.findById(ctx.tenantId, id);
+    const run = await agentRunRepository.findById(id);
     if (!run) {
       return NextResponse.json({ error: "Run not found" }, { status: 404 });
     }

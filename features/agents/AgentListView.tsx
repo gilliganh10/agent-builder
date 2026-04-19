@@ -23,10 +23,9 @@ const kindVariant: Record<string, "default" | "secondary" | "outline"> = {
 
 interface AgentListViewProps {
   agents: AgentDefinition[];
-  tenantSlug: string;
 }
 
-export function AgentListView({ agents, tenantSlug }: AgentListViewProps) {
+export function AgentListView({ agents }: AgentListViewProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<
@@ -131,7 +130,6 @@ export function AgentListView({ agents, tenantSlug }: AgentListViewProps) {
       primaryAction: {
         label: "New Agent",
         onClick: openCreate,
-        requiredPermission: "agents.create",
       },
     },
 
@@ -140,13 +138,11 @@ export function AgentListView({ agents, tenantSlug }: AgentListViewProps) {
         label: "Edit",
         icon: Pencil,
         onClick: openEdit,
-        requiredPermission: "agents.create",
       },
       {
         label: "Delete",
         icon: Trash2,
         onClick: openDelete,
-        requiredPermission: "agents.manage",
         variant: "destructive",
       },
     ],

@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import type { AgentDefinition, AgentRun } from "@/db/agents/schema";
 import type { Project } from "@/db/projects/schema";
-import { useTenant } from "@/lib/tenant-context";
 
 interface AgentRunPanelProps {
   agent: AgentDefinition;
@@ -32,7 +31,6 @@ interface AgentRunPanelProps {
 
 export function AgentRunPanel({ agent, projects }: AgentRunPanelProps) {
   const router = useRouter();
-  const { tenantSlug } = useTenant();
   const [isPending, startTransition] = useTransition();
   const [input, setInput] = useState("");
   const [projectSlug, setProjectSlug] = useState<string>("__none__");

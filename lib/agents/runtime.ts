@@ -1,4 +1,3 @@
-import type { Permission } from "@/lib/permissions";
 import type {
   AgentRun,
   AgentRunContext,
@@ -29,11 +28,9 @@ import { registerProposalLifecycleSink } from "@/lib/agents/streaming/proposal-l
 // ---------------------------------------------------------------------------
 
 export interface ExecuteAgentRunParams {
-  tenantId: string;
   agentSpec: AgentSpec;
   input: string;
   triggeredBy: string;
-  permissions: Permission[];
   sessionId?: string;
   meta?: Record<string, unknown>;
   flowDefinition?: FlowDefinition | null;
@@ -55,7 +52,7 @@ export async function executeAgentRun(
   params: ExecuteAgentRunParams
 ): Promise<AgentRun> {
   const {
-    tenantId, agentSpec, input, triggeredBy, permissions, sessionId,
+    agentSpec, input, triggeredBy, sessionId,
     meta, flowDefinition, envOverrides, publishedEnvOverrides, sessionEnvOverrides,
     sink: paramSink, signal,
   } = params;
@@ -63,12 +60,10 @@ export async function executeAgentRun(
 
   if (flowDefinition) {
     return executeFlow({
-      tenantId,
       flowDefinition,
       agentDefinitionId: agentSpec.definitionId,
       input,
       triggeredBy,
-      permissions,
       sessionId,
       runModel: agentSpec.model,
       meta,
@@ -80,7 +75,7 @@ export async function executeAgentRun(
     });
   }
 
-  const agentRun = await agentRunRepository.create(tenantId, {
+  const agentRun = await agentRunRepository.create({
     agentDefinitionId: agentSpec.definitionId,
     sessionId,
     input,
@@ -97,8 +92,6 @@ export async function executeAgentRun(
   const context: AgentRunContext = {
     runId: agentRun.id,
     triggeredBy,
-    permissions,
-    tenantId,
   };
 
   let result: LLMRunResult;
@@ -106,7 +99,7 @@ export async function executeAgentRun(
   try {
     let llmInput: string | ConversationMessage[] = input;
     if (sessionId) {
-      const conversationHistory = await buildConversationHistory(tenantId, sessionId, null);
+      const conversationHistory = await buildConversationHistory(sessionId, null);
       if (conversationHistory.length > 0) {
         llmInput = [...conversationHistory, { role: "user", content: input }];
       }
@@ -118,7 +111,7 @@ export async function executeAgentRun(
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     sink.emit("error", { message: errorMsg });
-    return agentRunRepository.fail(tenantId, agentRun.id, errorMsg);
+    return agentRunRepository.fail(agentRun.id, errorMsg);
   } finally {
     unregisterProposalSink();
   }
@@ -146,7 +139,7 @@ export async function executeAgentRun(
     metaMerge[OPENAI_USAGE_SUMMARY_META_KEY] = summarizeUsageRecords(records);
   }
 
-  const completedRun = await agentRunRepository.complete(tenantId, agentRun.id, {
+  const completedRun = await agentRunRepository.complete(agentRun.id, {
     finalOutput: result.finalOutput,
     tokenUsage,
     costEstimate: costEstimate ?? undefined,

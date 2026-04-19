@@ -25,7 +25,6 @@ const PRIMITIVE_NODE_TYPES = new Set(["researcher", "actor", "rewriter", "respon
 interface FlowNodeEditorProps {
   node: FlowNode;
   agentSlugs: string[];
-  primitiveSlugs?: string[];
   orchestratorVars?: VarDefinition[];
   onUpdate: (nodeId: string, data: Partial<FlowNodeData>) => void;
   onDelete: (nodeId: string) => void;
@@ -73,7 +72,6 @@ const CONDITION_OPERATORS = [
 export function FlowNodeEditor({
   node,
   agentSlugs,
-  primitiveSlugs = [],
   orchestratorVars = [],
   onUpdate,
   onDelete,
@@ -117,7 +115,6 @@ export function FlowNodeEditor({
         {isPrimitive && (
           <PrimitiveNodeFields
             data={data}
-            primitiveSlugs={primitiveSlugs}
             onUpdate={(patch) => onUpdate(node.id, patch)}
           />
         )}
@@ -442,88 +439,41 @@ function ConditionNodeFields({
 
 function PrimitiveNodeFields({
   data,
-  primitiveSlugs,
   onUpdate,
 }: {
   data: FlowNodeData;
-  primitiveSlugs: string[];
   onUpdate: (patch: Partial<FlowNodeData>) => void;
 }) {
-  const mode = data.primitiveId ? "library" : "inline";
-
-  function switchMode(next: string) {
-    if (next === "library") {
-      onUpdate({ inlineInstructions: undefined, inlineModel: undefined });
-    } else {
-      onUpdate({ primitiveId: undefined });
-    }
-  }
-
   return (
     <div className="space-y-3">
-      <Tabs value={mode} onValueChange={switchMode}>
-        <TabsList className="w-full">
-          <TabsTrigger value="library" className="flex-1 text-xs">
-            From Library
-          </TabsTrigger>
-          <TabsTrigger value="inline" className="flex-1 text-xs">
-            Inline
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {mode === "library" ? (
-        <div className="space-y-1.5">
-          <Label>Primitive</Label>
-          <Select
-            value={data.primitiveId ?? "__none__"}
-            onValueChange={(v) => onUpdate({ primitiveId: v === "__none__" ? undefined : v })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a primitive" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">None</SelectItem>
-              {primitiveSlugs.map((slug) => (
-                <SelectItem key={slug} value={slug}>
-                  {slug}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="prim-instructions">Instructions</Label>
-            <Textarea
-              id="prim-instructions"
-              value={data.inlineInstructions ?? ""}
-              onChange={(e) => onUpdate({ inlineInstructions: e.target.value || undefined })}
-              placeholder="System instructions for this primitive..."
-              className="min-h-[120px] text-xs font-mono"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Model</Label>
-            <Select
-              value={data.inlineModel ?? "default"}
-              onValueChange={(v) => onUpdate({ inlineModel: v as ModelPolicy })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ALL_MODEL_POLICIES.map((policy) => (
-                  <SelectItem key={policy} value={policy}>
-                    {MODEL_POLICIES[policy].label} — {MODEL_POLICIES[policy].description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
+      <div className="space-y-1.5">
+        <Label htmlFor="prim-instructions">Instructions</Label>
+        <Textarea
+          id="prim-instructions"
+          value={data.inlineInstructions ?? ""}
+          onChange={(e) => onUpdate({ inlineInstructions: e.target.value || undefined })}
+          placeholder="System instructions for this step..."
+          className="min-h-[120px] text-xs font-mono"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Model</Label>
+        <Select
+          value={data.inlineModel ?? "default"}
+          onValueChange={(v) => onUpdate({ inlineModel: v as ModelPolicy })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ALL_MODEL_POLICIES.map((policy) => (
+              <SelectItem key={policy} value={policy}>
+                {MODEL_POLICIES[policy].label} — {MODEL_POLICIES[policy].description}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }

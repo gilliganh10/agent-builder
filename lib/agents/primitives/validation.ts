@@ -118,10 +118,10 @@ function validatePrimitiveNode(
 ): void {
   const lockSet = new Set(locks);
 
-  if (!node.data.primitiveId && !node.data.inlineInstructions) {
+  if (!node.data.inlineInstructions) {
     errors.push({
       nodeId: node.id,
-      message: `primitive node "${node.data.label ?? node.id}" must have a primitiveId or inlineInstructions`,
+      message: `primitive node "${node.data.label ?? node.id}" must have inlineInstructions`,
     });
   }
 

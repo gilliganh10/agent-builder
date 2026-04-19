@@ -13,17 +13,13 @@ export function ActorFlowNode({ selected, data }: NodeProps & { data: FlowNodeDa
         <Zap className="h-4 w-4 text-[#F45B69]" />
         <span className="text-sm font-medium">{data.label ?? "Actor"}</span>
       </div>
-      {data.primitiveId ? (
-        <Badge variant="outline" className="mt-1 text-xs">
-          {data.primitiveId}
-        </Badge>
-      ) : data.inlineInstructions ? (
+      {data.inlineInstructions ? (
         <Badge className="mt-1 text-xs bg-[#946E83] hover:bg-[#946E83]/90">
           Inline
         </Badge>
       ) : (
         <p className="text-xs text-muted-foreground mt-1 italic">
-          No primitive selected
+          Add instructions in the inspector
         </p>
       )}
     </FlowNodeShell>

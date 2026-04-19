@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import type { ViewerMode } from "@/lib/viewer-mode-context";
-import type { Permission } from "@/lib/permissions";
 
 // ---------------------------------------------------------------------------
 // Column definitions
@@ -29,12 +27,6 @@ export interface ColumnDef<TRow> {
   align?: "left" | "center" | "right";
   /** Whether the column can be sorted client-side in v1. */
   sortable?: boolean;
-  /**
-   * When true, this column is hidden when viewerMode === "viewer".
-   * NOTE: This is UI-level enforcement only. Server-side enforcement must be
-   * implemented separately when real auth is added.
-   */
-  adminOnly?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,12 +40,6 @@ export interface ActionDef<TRow> {
   icon?: LucideIcon;
   /** Called when the user selects this action. */
   onClick: (row: TRow) => void;
-  /**
-   * When set, this action is omitted when the current ViewerMode does not hold
-   * the specified permission. UI-level enforcement only — server actions must
-   * enforce independently via requirePermission().
-   */
-  requiredPermission?: Permission;
   /** Controls styling of the dropdown item. Defaults to "default". */
   variant?: "default" | "destructive";
 }
@@ -82,12 +68,6 @@ export interface PrimaryAction {
   label: string;
   icon?: LucideIcon;
   onClick: () => void;
-  /**
-   * When set, this button is hidden when the current ViewerMode does not hold
-   * the specified permission. UI-level enforcement only — server actions must
-   * enforce independently via requirePermission().
-   */
-  requiredPermission?: Permission;
 }
 
 export interface ToolbarConfig<TRow> {
@@ -106,7 +86,6 @@ export interface ToolbarConfig<TRow> {
 export interface EmptyStateVariant {
   title: string;
   description: string;
-  /** Label for the CTA button. Only shown when viewerMode === "admin". */
   ctaLabel?: string;
   onCta?: () => void;
 }
@@ -134,14 +113,12 @@ export interface PaginationConfig {
 
 export interface SelectionConfig {
   enabled: boolean;
-  requiredPermission?: Permission;
 }
 
 export interface BulkAction {
   label: string;
   icon?: LucideIcon;
   onClick: (selectedIds: (string | number)[]) => void;
-  requiredPermission?: Permission;
   variant?: "default" | "secondary";
 }
 
@@ -170,7 +147,6 @@ export interface TableConfig<TRow> {
 export interface DataTableProps<TRow extends { id: string | number }> {
   data: TRow[];
   config: TableConfig<TRow>;
-  viewerMode?: ViewerMode;
   isLoading?: boolean;
   selection?: {
     selectedIds: Set<string | number>;

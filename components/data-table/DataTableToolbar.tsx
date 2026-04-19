@@ -11,8 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ToolbarConfig, FilterDef } from "./types";
-import type { ViewerMode } from "@/lib/viewer-mode-context";
-import { hasPermission, type Permission } from "@/lib/permissions";
 
 interface DataTableToolbarProps<TRow> {
   config: ToolbarConfig<TRow>;
@@ -20,8 +18,6 @@ interface DataTableToolbarProps<TRow> {
   onSearchChange: (value: string) => void;
   filterValues: Record<string, string>;
   onFilterChange: (filterId: string, value: string) => void;
-  viewerMode: ViewerMode;
-  permissions: Permission[];
 }
 
 const ALL_VALUE = "__all__";
@@ -32,13 +28,9 @@ export function DataTableToolbar<TRow>({
   onSearchChange,
   filterValues,
   onFilterChange,
-  permissions,
 }: DataTableToolbarProps<TRow>) {
   const primaryAction = config.primaryAction;
-  const showPrimaryAction =
-    primaryAction &&
-    (!primaryAction.requiredPermission ||
-      hasPermission(permissions, primaryAction.requiredPermission));
+  const showPrimaryAction = Boolean(primaryAction);
 
   const PrimaryIcon = primaryAction?.icon;
 

@@ -30,7 +30,6 @@ interface AttachmentEditorProps {
   attachment: BlockAttachment;
   onChange: (patch: Partial<BlockAttachment>) => void;
   onRemove: () => void;
-  primitiveSlugs: string[];
   orchestratorVars: VarDefinition[];
   blockType: string;
   variableGroups?: VariableInsertGroups;
@@ -87,12 +86,10 @@ export function AttachmentEditor({
   attachment,
   onChange,
   onRemove,
-  primitiveSlugs,
   orchestratorVars,
   blockType,
   variableGroups,
 }: AttachmentEditorProps) {
-  const isInline = !attachment.primitiveId;
   const allowedModes = blockType === "user"
     ? MODES
     : MODES.filter((m) => m.value !== "override");
@@ -149,57 +146,26 @@ export function AttachmentEditor({
 
       <Separator />
 
-      {/* Source: Library or Inline */}
-      <div>
-        <Label className="text-[10px]">Primitive Source</Label>
-        <div className="flex gap-1 mt-1">
-          <Button
-            variant={!isInline ? "default" : "outline"}
-            size="sm"
-            className="h-6 text-[10px] flex-1"
-            onClick={() => onChange({ primitiveId: primitiveSlugs[0] ?? "", inlinePrimitive: undefined })}
-          >
-            From Library
-          </Button>
-          <Button
-            variant={isInline ? "default" : "outline"}
-            size="sm"
-            className="h-6 text-[10px] flex-1"
-            onClick={() => onChange({
-              primitiveId: undefined,
+      {!attachment.inlinePrimitive && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="h-7 w-full text-[10px]"
+          onClick={() =>
+            onChange({
               inlinePrimitive: {
                 kind: attachment.mode === "override" ? "rewriter" : "researcher",
                 instructions: "",
               },
-            })}
-          >
-            Inline
-          </Button>
-        </div>
-      </div>
-
-      {!isInline && (
-        <div>
-          <Label className="text-[10px]">Primitive</Label>
-          <Select
-            value={attachment.primitiveId ?? ""}
-            onValueChange={(v) => onChange({ primitiveId: v })}
-          >
-            <SelectTrigger className="h-7 text-xs">
-              <SelectValue placeholder="Select primitive..." />
-            </SelectTrigger>
-            <SelectContent>
-              {primitiveSlugs.map((slug) => (
-                <SelectItem key={slug} value={slug}>
-                  {slug}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            })
+          }
+        >
+          Configure inline step
+        </Button>
       )}
 
-      {isInline && attachment.inlinePrimitive && (
+      {attachment.inlinePrimitive && (
         <div className="space-y-2">
           <div>
             <Label className="text-[10px]">Kind</Label>

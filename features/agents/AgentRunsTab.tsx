@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/DataTable";
 import type { TableConfig } from "@/components/data-table/types";
 import { RunDetailSheet } from "./RunDetailSheet";
-import { useTenant } from "@/lib/tenant-context";
-import type { AgentDefinition, AgentRun } from "@/db/agents/schema";
+import type { AgentRun } from "@/db/agents/schema";
 
 const statusVariant: Record<
   string,
@@ -20,13 +19,10 @@ const statusVariant: Record<
 };
 
 interface AgentRunsTabProps {
-  agent: AgentDefinition;
   runs: AgentRun[];
 }
 
-export function AgentRunsTab({ agent, runs }: AgentRunsTabProps) {
-  const { tenantSlug } = useTenant();
-
+export function AgentRunsTab({ runs }: AgentRunsTabProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [detailRun, setDetailRun] = useState<AgentRun | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -48,7 +44,7 @@ export function AgentRunsTab({ agent, runs }: AgentRunsTabProps) {
         setDetailLoading(false);
       }
     },
-    [tenantSlug]
+    []
   );
 
   const tableConfig: TableConfig<AgentRun> = {

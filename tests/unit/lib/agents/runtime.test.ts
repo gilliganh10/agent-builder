@@ -69,7 +69,6 @@ describe("executeAgentRun", () => {
     });
 
     await executeAgentRun({
-      tenantId: "tenant_1",
       agentSpec: {
         definitionId: "agent_1",
         name: "Report Copilot",
@@ -80,17 +79,16 @@ describe("executeAgentRun", () => {
       },
       input: "Current message with context",
       triggeredBy: "daniel@example.com",
-      permissions: ["agents.run"],
       sessionId: "csess_1",
       meta: { conversationInput: "Do you still remember my name?" },
     });
 
-    expect(mockAgentRunRepository.create).toHaveBeenCalledWith("tenant_1", expect.objectContaining({
+    expect(mockAgentRunRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       agentDefinitionId: "agent_1",
       sessionId: "csess_1",
     }));
 
-    expect(mockBuildConversationHistory).toHaveBeenCalledWith("tenant_1", "csess_1", null);
+    expect(mockBuildConversationHistory).toHaveBeenCalledWith("csess_1", null);
 
     expect(mockRunAgent).toHaveBeenCalledWith(
       expect.objectContaining({ slug: "report-copilot" }),
@@ -101,7 +99,6 @@ describe("executeAgentRun", () => {
       ],
       expect.objectContaining({
         runId: "arun_1",
-        tenantId: "tenant_1",
         triggeredBy: "daniel@example.com",
       }),
       { phase: "single_agent_run" },

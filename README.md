@@ -1,6 +1,6 @@
 # Agent Builder
 
-A small, self-contained **agent builder** and **chat tester** built with Next.js. Define flows in the UI, run them in the built-in chat, publish a token, and iterate locally—no tenant layers or control-panel chrome.
+A small, self-contained **agent builder** and **chat tester** built with Next.js. Define flows in the UI, run them in the built-in chat, publish a token, and iterate locally—no extra control-panel chrome.
 
 You can **create your own agents from scratch** or start from templates under **New from template** on the Agents screen. The app is a focused playground: one workspace, flat APIs, and a clear path from idea → flow → run → inspect.
 
@@ -14,11 +14,11 @@ You can **create your own agents from scratch** or start from templates under **
 - **Public chat** — `/api/public/chat/[token]` for agents you explicitly publish (treat the token like a secret).
 - **Data & tests** — SQLite-first Prisma schema and a Vitest unit suite.
 
-This project was extracted from a larger SaaS codebase: multi-tenancy, auth, and enterprise surfaces are stripped so it runs as a **single-scope** local tool.
+This project was extracted from a larger SaaS codebase: enterprise-only surfaces are stripped so it runs as a **single-scope** local tool.
 
 ## Local-trust model — not for public deployment
 
-This build has **no authentication**, **no RBAC**, and **no multi-tenancy**. Every HTTP caller is treated as the implicit local operator with full permissions. That fits a developer laptop, a trusted internal network, or an app already wrapped by your own auth.
+There is **no authentication** layer: every HTTP caller is treated as the implicit local operator. That fits a developer laptop, a trusted internal network, or an app already wrapped by your own auth.
 
 Do **not** expose the app raw on the public internet. If you host it remotely, put it behind authentication (OAuth, IP allowlist, mTLS), rate limiting, and network controls that isolate the database and `OPENAI_API_KEY`.
 

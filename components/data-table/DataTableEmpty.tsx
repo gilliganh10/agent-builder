@@ -7,8 +7,6 @@ interface DataTableEmptyProps {
   description: string;
   ctaLabel?: string;
   onCta?: () => void;
-  /** Whether the caller has permission to trigger the CTA action. */
-  canCta?: boolean;
 }
 
 export function DataTableEmpty({
@@ -17,9 +15,8 @@ export function DataTableEmpty({
   description,
   ctaLabel,
   onCta,
-  canCta = false,
 }: DataTableEmptyProps) {
-  const showCta = ctaLabel && onCta && canCta;
+  const showCta = Boolean(ctaLabel && onCta);
 
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-card px-6 py-16 text-center shadow-sm">

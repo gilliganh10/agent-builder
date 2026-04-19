@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requirePermission } from "@/lib/auth-guard";
 import { agentRepository } from "@/repositories/agent.repository";
 import { allToolNames } from "@/lib/agents/tool-registry";
 import { resolveModel, type ModelPolicy } from "@/lib/agents/model-policy";
@@ -27,9 +26,7 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-export async function createAgent(tenantId: string, values: AgentFormValues) {
-  await requirePermission("agents.create");
-
+export async function createAgent(values: AgentFormValues) {
   const slug = values.slug || slugify(values.name);
 
   const validTools = allToolNames();
@@ -38,7 +35,7 @@ export async function createAgent(tenantId: string, values: AgentFormValues) {
     throw new Error(`Unknown tools: ${invalid.join(", ")}`);
   }
 
-  const existing = await agentRepository.findBySlug(tenantId, slug);
+  const existing = await agentRepository.findBySlug(slug);
   if (existing) {
     throw new Error(`Agent with slug "${slug}" already exists`);
   }
@@ -47,7 +44,7 @@ export async function createAgent(tenantId: string, values: AgentFormValues) {
   const instructions = values.instructions?.trim() ?? "";
   const allowedTools = values.allowedTools ?? [];
 
-  const agent = await agentRepository.create(tenantId, {
+  const agent = await agentRepository.create({
     name: values.name,
     slug,
     description: values.description,
@@ -60,7 +57,7 @@ export async function createAgent(tenantId: string, values: AgentFormValues) {
     mode: "conversational",
   });
 
-  await agentRepository.createVersion(tenantId, agent.id, {
+  await agentRepository.createVersion(agent.id, {
     version: 1,
     instructions,
     allowedTools,
@@ -75,10 +72,8 @@ export async function createAgent(tenantId: string, values: AgentFormValues) {
   return agent;
 }
 
-export async function updateAgent(tenantId: string, id: string, values: AgentFormValues) {
-  await requirePermission("agents.create");
-
-  const agent = await agentRepository.findById(tenantId, id);
+export async function updateAgent(id: string, values: AgentFormValues) {
+  const agent = await agentRepository.findById(id);
   if (!agent) throw new Error("Agent not found");
   if (!canEditAgentDefinition(agent)) throw new Error("Built-in agents cannot be edited");
 
@@ -92,7 +87,7 @@ export async function updateAgent(tenantId: string, id: string, values: AgentFor
   const instructions = values.instructions?.trim() ?? "";
   const allowedTools = values.allowedTools ?? [];
 
-  const updatePayload: Parameters<typeof agentRepository.update>[2] = {
+  const updatePayload: Parameters<typeof agentRepository.update>[1] = {
     name: values.name,
     description: values.description,
     instructions,
@@ -105,14 +100,14 @@ export async function updateAgent(tenantId: string, id: string, values: AgentFor
     updatePayload.flowDefinition = values.flowDefinition;
   }
 
-  const updated = await agentRepository.update(tenantId, id, updatePayload);
+  const updated = await agentRepository.update(id, updatePayload);
 
   if (!updated) throw new Error("Update failed");
 
-  const latestVersion = await agentRepository.getLatestVersion(tenantId, id);
+  const latestVersion = await agentRepository.getLatestVersion(id);
   const nextVersion = latestVersion ? latestVersion.version + 1 : 1;
 
-  await agentRepository.createVersion(tenantId, id, {
+  await agentRepository.createVersion(id, {
     version: nextVersion,
     instructions,
     allowedTools,
@@ -132,24 +127,21 @@ export async function updateAgent(tenantId: string, id: string, values: AgentFor
  * collisions append `-<n>` so the same template can be seeded repeatedly.
  */
 export async function createAgentFromTemplate(
-  tenantId: string,
   templateId: string
 ): Promise<{ slug: string }> {
-  await requirePermission("agents.create");
-
   const template = findAgentTemplate(templateId);
   if (!template) throw new Error(`Unknown template: ${templateId}`);
 
   let slug = template.slugSuggestion;
   let suffix = 2;
-  while (await agentRepository.findBySlug(tenantId, slug)) {
+  while (await agentRepository.findBySlug(slug)) {
     slug = `${template.slugSuggestion}-${suffix++}`;
   }
 
   const flowDefinition = template.buildFlowDefinition();
   const defaultModel = resolveModel(template.modelPolicy);
 
-  const agent = await agentRepository.create(tenantId, {
+  const agent = await agentRepository.create({
     name: template.name,
     slug,
     description: template.description,
@@ -162,7 +154,7 @@ export async function createAgentFromTemplate(
     meta: { modelPolicy: template.modelPolicy, templateId: template.id },
   });
 
-  await agentRepository.createVersion(tenantId, agent.id, {
+  await agentRepository.createVersion(agent.id, {
     version: 1,
     instructions: template.instructions,
     allowedTools: [],
@@ -177,15 +169,13 @@ export async function createAgentFromTemplate(
   return { slug: agent.slug };
 }
 
-export async function deleteAgent(tenantId: string, id: string) {
-  await requirePermission("agents.manage");
-
-  const agent = await agentRepository.findById(tenantId, id);
+export async function deleteAgent(id: string) {
+  const agent = await agentRepository.findById(id);
   if (!agent) throw new Error("Agent not found");
   if (agent.kind === "built_in") throw new Error("Built-in agents cannot be deleted");
 
   const { slug } = agent;
-  await agentRepository.delete(tenantId, id);
+  await agentRepository.delete(id);
 
   revalidatePath("/agents");
   revalidatePath(`/agents/${slug}`);

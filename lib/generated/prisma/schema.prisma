@@ -140,21 +140,6 @@ model RunArtifact {
   @@index([runId])
 }
 
-model PrimitiveDefinition {
-  id           String   @id
-  name         String
-  slug         String   @unique
-  kind         String
-  description  String   @default("")
-  instructions String
-  config       Json
-  allowedTools Json
-  defaultModel String
-  meta         Json
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
 model RunEval {
   id        String   @id
   runId     String

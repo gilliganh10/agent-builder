@@ -29,7 +29,6 @@ interface AgentWorkspaceInnerProps {
   versions?: AgentVersion[];
   runs?: AgentRun[];
   allAgentSlugs?: string[];
-  allPrimitiveSlugs?: string[];
 }
 
 function AgentWorkspaceInner({
@@ -37,7 +36,6 @@ function AgentWorkspaceInner({
   versions = [],
   runs = [],
   allAgentSlugs = [],
-  allPrimitiveSlugs = [],
 }: AgentWorkspaceInnerProps) {
   const {
     agent,
@@ -74,7 +72,6 @@ function AgentWorkspaceInner({
           versions={versions}
           runs={runs}
           allAgentSlugs={allAgentSlugs}
-          allPrimitiveSlugs={allPrimitiveSlugs}
         />
       </main>
 
@@ -101,7 +98,6 @@ function AgentWorkspaceInner({
         <FlowBuilderProvider
           agent={agent}
           allAgentSlugs={allAgentSlugs}
-          allPrimitiveSlugs={allPrimitiveSlugs}
         >
           {body}
         </FlowBuilderProvider>
@@ -122,7 +118,7 @@ function AgentWorkspaceInner({
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <AgentWorkspaceHeader />
-        <ChatBuilderProvider allPrimitiveSlugs={allPrimitiveSlugs}>
+        <ChatBuilderProvider>
           {body}
         </ChatBuilderProvider>
       </div>
@@ -142,7 +138,6 @@ function TabContent({
   versions,
   runs,
   allAgentSlugs: _allAgentSlugs,
-  allPrimitiveSlugs: _allPrimitiveSlugs,
 }: AgentWorkspaceInnerProps) {
   const { activeTab, builderSubtab, agent } = useAgentWorkspace();
 
@@ -171,7 +166,7 @@ function TabContent({
   if (activeTab === "runs") {
     return (
       <ScrollableTab fullWidth>
-        <AgentRunsTab agent={agent} runs={runs ?? []} />
+        <AgentRunsTab runs={runs ?? []} />
       </ScrollableTab>
     );
   }

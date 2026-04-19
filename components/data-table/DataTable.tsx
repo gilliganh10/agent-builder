@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useViewerMode } from "@/lib/viewer-mode-context";
-import { hasPermission } from "@/lib/permissions";
-import type { Permission } from "@/lib/permissions";
 import type { DataTableProps } from "./types";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { DataTableBody } from "./DataTableBody";
@@ -17,15 +14,10 @@ const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50];
 export function DataTable<TRow extends { id: string | number }>({
   data,
   config,
-  viewerMode: viewerModeProp,
   isLoading = false,
   selection,
   bulkActions,
 }: DataTableProps<TRow>) {
-  const { mode: contextMode, permissions: contextPermissions } = useViewerMode();
-  const viewerMode = viewerModeProp ?? contextMode;
-  const permissions: Permission[] = contextPermissions;
-
   // ---------------------------------------------------------------------------
   // Search state
   // ---------------------------------------------------------------------------
@@ -109,10 +101,7 @@ export function DataTable<TRow extends { id: string | number }>({
   // ---------------------------------------------------------------------------
   // Selection — whether row checkboxes are shown
   // ---------------------------------------------------------------------------
-  const selectionEnabled =
-    !!config.selection?.enabled &&
-    (!config.selection.requiredPermission ||
-      hasPermission(permissions, config.selection.requiredPermission));
+  const selectionEnabled = !!config.selection?.enabled;
 
   // ---------------------------------------------------------------------------
   // Derived empty state variant
@@ -123,15 +112,8 @@ export function DataTable<TRow extends { id: string | number }>({
 
   const showToolbar = !!config.toolbar;
   const columnCount =
-    config.columns.filter(
-      (col) => !(col.adminOnly && viewerMode === "viewer")
-    ).length +
-    (config.actions?.some(
-      (a) =>
-        !a.requiredPermission || hasPermission(permissions, a.requiredPermission)
-    )
-      ? 1
-      : 0) +
+    config.columns.length +
+    (config.actions?.length ? 1 : 0) +
     (selectionEnabled ? 1 : 0);
 
   // ---------------------------------------------------------------------------
@@ -153,9 +135,6 @@ export function DataTable<TRow extends { id: string | number }>({
 
   if (noData) {
     const { noData: variant } = config.emptyState;
-    // CTA is shown when the toolbar's primaryAction permission is held
-    const primaryPermission = config.toolbar?.primaryAction?.requiredPermission;
-    const canCta = !primaryPermission || hasPermission(permissions, primaryPermission);
     return (
       <DataTableEmpty
         icon={config.emptyState.icon}
@@ -163,7 +142,6 @@ export function DataTable<TRow extends { id: string | number }>({
         description={variant.description}
         ctaLabel={variant.ctaLabel}
         onCta={variant.onCta}
-        canCta={canCta}
       />
     );
   }
@@ -177,8 +155,6 @@ export function DataTable<TRow extends { id: string | number }>({
           onSearchChange={handleSearchChange}
           filterValues={filterValues}
           onFilterChange={handleFilterChange}
-          viewerMode={viewerMode}
-          permissions={permissions}
         />
       )}
 
@@ -192,7 +168,6 @@ export function DataTable<TRow extends { id: string | number }>({
           }}
           onClearSelection={() => selection.onSelectionChange(new Set())}
           bulkActions={bulkActions}
-          permissions={permissions}
         />
       )}
 
@@ -207,8 +182,6 @@ export function DataTable<TRow extends { id: string | number }>({
           <DataTableBody
             rows={paginatedRows}
             config={config}
-            viewerMode={viewerMode}
-            permissions={permissions}
             selectionEnabled={selectionEnabled}
             selectedIds={selection?.selectedIds}
             onSelectionChange={selection?.onSelectionChange}

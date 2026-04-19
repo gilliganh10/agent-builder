@@ -9,7 +9,6 @@ interface AgentDetailViewProps {
   versions?: AgentVersion[];
   runs?: AgentRun[];
   allAgentSlugs?: string[];
-  allPrimitiveSlugs?: string[];
   initialTab?: string;
   initialSubtab?: string;
 }
@@ -20,7 +19,6 @@ export function AgentDetailView({
   versions = [],
   runs = [],
   allAgentSlugs = [],
-  allPrimitiveSlugs = [],
   initialTab,
   initialSubtab,
 }: AgentDetailViewProps) {
@@ -33,7 +31,6 @@ export function AgentDetailView({
       versions={versions}
       runs={runs}
       allAgentSlugs={allAgentSlugs}
-      allPrimitiveSlugs={allPrimitiveSlugs}
     />
   );
 }

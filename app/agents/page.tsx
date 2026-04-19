@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Blocks, History } from "lucide-react";
+import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AgentListView } from "@/features/agents/AgentListView";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Agents" };
 
 export default async function AgentsPage() {
-  const agents = (await agentRepository.list("")).filter((agent) => !isInternalAgent(agent));
+  const agents = (await agentRepository.list()).filter((agent) => !isInternalAgent(agent));
 
   return (
     <div className="space-y-8">
@@ -25,14 +25,8 @@ export default async function AgentsPage() {
             All runs
           </Link>
         </Button>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/agents/primitives" className="gap-1.5">
-            <Blocks className="h-4 w-4" />
-            Primitives Library
-          </Link>
-        </Button>
       </PageHeader>
-      <AgentListView agents={agents} tenantSlug="" />
+      <AgentListView agents={agents} />
     </div>
   );
 }

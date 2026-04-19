@@ -1,4 +1,3 @@
-import type { Permission } from "@/lib/permissions";
 import type {
   AgentRun,
   FlowDefinition,
@@ -83,13 +82,10 @@ function appendUsageToLedger(
 
 
 export interface ExecuteFlowParams {
-  tenantId: string;
   flowDefinition: FlowDefinition;
   agentDefinitionId: string;
   input: string;
   triggeredBy: string;
-  permissions: Permission[];
-  projectId?: string;
   sessionId?: string;
   runModel?: string;
   meta?: Record<string, unknown>;
@@ -110,14 +106,14 @@ export interface ExecuteFlowParams {
  */
 export async function executeFlow(params: ExecuteFlowParams): Promise<AgentRun> {
   const {
-    tenantId, flowDefinition, agentDefinitionId, input, triggeredBy,
-    permissions, projectId, sessionId, runModel, meta,
+    flowDefinition, agentDefinitionId, input, triggeredBy,
+    sessionId, runModel, meta,
     envOverrides, publishedEnvOverrides, sessionEnvOverrides,
     sink: paramSink,
   } = params;
   const sink: RunEventSink = paramSink ?? noopSink;
 
-  const run = await agentRunRepository.create(tenantId, {
+  const run = await agentRunRepository.create({
     agentDefinitionId,
     sessionId,
     input,
@@ -133,7 +129,7 @@ export async function executeFlow(params: ExecuteFlowParams): Promise<AgentRun> 
 
   let conversationHistory: ConversationMessage[] | undefined;
   if (sessionId) {
-    conversationHistory = await buildConversationHistory(tenantId, sessionId, flowDefinition);
+    conversationHistory = await buildConversationHistory(sessionId, flowDefinition);
   }
 
   const resolvedEnv = resolveEnvVars({
@@ -189,10 +185,7 @@ export async function executeFlow(params: ExecuteFlowParams): Promise<AgentRun> 
 
   const ctx: NodeExecutionContext = {
     runId: run.id,
-    tenantId,
     triggeredBy,
-    permissions,
-    projectId,
     conversationHistory,
     resolvedEnv,
     orchestratorState,
@@ -254,7 +247,7 @@ export async function executeFlow(params: ExecuteFlowParams): Promise<AgentRun> 
       sessionId &&
       flowDefinition.orchestrator?.scope === "conversation"
     ) {
-      const runWithArt = await agentRunRepository.findById(tenantId, run.id);
+      const runWithArt = await agentRunRepository.findById(run.id);
       const proposals =
         runWithArt?.artifacts?.filter(
           (a) =>
@@ -348,7 +341,7 @@ export async function executeFlow(params: ExecuteFlowParams): Promise<AgentRun> 
       metaMerge[OPENAI_USAGE_SUMMARY_META_KEY] = summarizeUsageRecords(ledger);
     }
 
-    return await agentRunRepository.complete(tenantId, run.id, {
+    return await agentRunRepository.complete(run.id, {
       finalOutput: JSON.stringify(flowRunOutput),
       tokenUsage: totalTokens,
       costEstimate,
@@ -358,7 +351,7 @@ export async function executeFlow(params: ExecuteFlowParams): Promise<AgentRun> 
     });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return agentRunRepository.fail(tenantId, run.id, errorMsg);
+    return agentRunRepository.fail(run.id, errorMsg);
   } finally {
     unregisterProposalSink();
   }
@@ -443,7 +436,7 @@ async function executeDAG(
       if (node.type === "condition") {
         const condResult = executeConditionNode(node, upstreamOutput, ctx.orchestratorState);
 
-        await agentRunRepository.addStep(ctx.tenantId, {
+        await agentRunRepository.addStep({
           runId: ctx.runId,
           stepIndex: stepIndex++,
           kind: "flow_node",
@@ -520,7 +513,7 @@ async function executeDAG(
 
         result = { output: upstreamOutput, durationMs: 0, status: "completed" };
 
-        await agentRunRepository.addStep(ctx.tenantId, {
+        await agentRunRepository.addStep({
           runId: ctx.runId,
           stepIndex: stepIndex++,
           kind: "flow_node",
@@ -543,7 +536,7 @@ async function executeDAG(
       }
 
       const recordStepIndex = stepIndex;
-      await agentRunRepository.addStep(ctx.tenantId, {
+      await agentRunRepository.addStep({
         runId: ctx.runId,
         stepIndex: stepIndex++,
         kind: "flow_node",
@@ -647,7 +640,7 @@ async function executeDAG(
       const upstreamOutput = gatherUpstreamOutput(nodeId, reverseAdj, nodeOutputs);
       const forkOutput = executeForkNode(node, upstreamOutput);
 
-      await agentRunRepository.addStep(ctx.tenantId, {
+      await agentRunRepository.addStep({
         runId: ctx.runId,
         stepIndex: stepIndex++,
         kind: "flow_node",
@@ -701,7 +694,7 @@ async function executeDAG(
 
       const joinOutput = executeJoinNode(node, branchOutputs);
 
-      await agentRunRepository.addStep(ctx.tenantId, {
+      await agentRunRepository.addStep({
         runId: ctx.runId,
         stepIndex: stepIndex++,
         kind: "flow_node",
@@ -766,7 +759,7 @@ async function executeBranch(
     if (node.type === "condition") {
       const condResult = executeConditionNode(node, upstreamOutput, ctx.orchestratorState);
 
-      await agentRunRepository.addStep(ctx.tenantId, {
+      await agentRunRepository.addStep({
         runId: ctx.runId,
         stepIndex: nextStepIndex(),
         kind: "flow_node",
@@ -824,7 +817,7 @@ async function executeBranch(
     }
 
     const branchRecordStepIndex = nextStepIndex();
-    await agentRunRepository.addStep(ctx.tenantId, {
+    await agentRunRepository.addStep({
       runId: ctx.runId,
       stepIndex: branchRecordStepIndex,
       kind: "flow_node",
@@ -972,10 +965,7 @@ async function executeStateExtractorNode(
 
   const agentCtx = {
     runId: ctx.runId,
-    tenantId: ctx.tenantId,
     triggeredBy: ctx.triggeredBy,
-    permissions: ctx.permissions,
-    projectId: ctx.projectId,
   };
 
   const model =
@@ -1023,10 +1013,7 @@ async function executeStructuredExtraction(
 
   const agentCtx = {
     runId: ctx.runId,
-    tenantId: ctx.tenantId,
     triggeredBy: ctx.triggeredBy,
-    permissions: ctx.permissions,
-    projectId: ctx.projectId,
   };
 
   const model =

@@ -2,7 +2,6 @@
 
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { hasPermission, type Permission } from "@/lib/permissions";
 import type { BulkAction } from "./types";
 
 interface DataTableBulkBarProps {
@@ -11,7 +10,6 @@ interface DataTableBulkBarProps {
   onSelectAll: () => void;
   onClearSelection: () => void;
   bulkActions?: BulkAction[];
-  permissions: Permission[];
 }
 
 export function DataTableBulkBar({
@@ -20,11 +18,8 @@ export function DataTableBulkBar({
   onSelectAll,
   onClearSelection,
   bulkActions,
-  permissions,
 }: DataTableBulkBarProps) {
-  const effectiveActions = (bulkActions ?? []).filter(
-    (a) => !a.requiredPermission || hasPermission(permissions, a.requiredPermission),
-  );
+  const effectiveActions = bulkActions ?? [];
 
   return (
     <div className="flex items-center gap-3 rounded-lg border border-[#222E50]/20 bg-[#222E50]/5 px-4 py-2 text-sm">

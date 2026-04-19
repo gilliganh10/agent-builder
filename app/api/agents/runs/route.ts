@@ -10,12 +10,8 @@ function parseStatus(raw: string | null): RunStatus | undefined {
   return STATUSES.includes(raw as RunStatus) ? (raw as RunStatus) : undefined;
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{}> }
-) {
+export async function GET(request: Request) {
   try {
-        const ctx = { tenantId: "" } as const;
     const url = new URL(request.url);
     const takeRaw = url.searchParams.get("take");
     const skipRaw = url.searchParams.get("skip");
@@ -34,7 +30,7 @@ export async function GET(
       return NextResponse.json({ error: "Invalid until date" }, { status: 400 });
     }
 
-    const { rows, total } = await agentRunRepository.listForTenantSummary(ctx.tenantId, {
+    const { rows, total } = await agentRunRepository.listRunsSummary({
       take: Number.isFinite(take as number) ? take : undefined,
       skip: Number.isFinite(skip as number) ? skip : undefined,
       agentDefinitionId,

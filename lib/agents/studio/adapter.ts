@@ -238,7 +238,6 @@ function resolveStepKind(
   if (primKind === "researcher") return "understand";
   if (primKind === "eval") return null; // Plan v1 does not surface eval
   if (primKind === "actor") return null; // actors are graph-only in v1
-  if (att.primitiveId) return blockKind === "assistant" ? "respond" : "understand";
   return "understand";
 }
 

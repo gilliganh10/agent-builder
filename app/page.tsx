@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Blocks, Bot, History } from "lucide-react";
+import { Bot, History } from "lucide-react";
 
 export default function Home() {
   return (
@@ -18,7 +18,7 @@ export default function Home() {
         </p>
       </header>
 
-      <nav className="grid gap-3 sm:grid-cols-3">
+      <nav className="grid gap-3 sm:grid-cols-2">
         <Link
           href="/agents"
           className="group rounded-lg border border-border bg-card p-5 transition hover:border-foreground/40 hover:bg-muted/40"
@@ -37,16 +37,6 @@ export default function Home() {
           <h2 className="font-medium group-hover:underline">All runs</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Inspect run history, artifacts, and evals.
-          </p>
-        </Link>
-        <Link
-          href="/agents/primitives"
-          className="group rounded-lg border border-border bg-card p-5 transition hover:border-foreground/40 hover:bg-muted/40"
-        >
-          <Blocks className="mb-3 h-5 w-5 text-primary" />
-          <h2 className="font-medium group-hover:underline">Primitives</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Reusable building blocks for flow graphs.
           </p>
         </Link>
       </nav>

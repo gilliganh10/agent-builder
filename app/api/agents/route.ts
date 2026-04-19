@@ -20,25 +20,17 @@ const CreateAgentSchema = z.object({
   modelPolicy: z.enum(ALL_MODEL_POLICIES as [string, ...string[]]).default("default"),
 });
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{}> }
-) {
+export async function GET() {
   try {
-        const ctx = { tenantId: "" } as const;
-    const agents = (await agentRepository.list(ctx.tenantId)).filter((agent) => !isInternalAgent(agent));
+    const agents = (await agentRepository.list()).filter((agent) => !isInternalAgent(agent));
     return NextResponse.json(agents);
   } catch (err) {
     return handleApiError(err);
   }
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{}> }
-) {
+export async function POST(request: Request) {
   try {
-        const ctx = { tenantId: "" } as const;
     const body = await request.json();
     const parsed = CreateAgentSchema.safeParse(body);
     if (!parsed.success) {
@@ -60,7 +52,7 @@ export async function POST(
       );
     }
 
-    const existing = await agentRepository.findBySlug(ctx.tenantId, slug);
+    const existing = await agentRepository.findBySlug(slug);
     if (existing) {
       return NextResponse.json(
         { error: `Agent with slug "${slug}" already exists` },
@@ -70,7 +62,7 @@ export async function POST(
 
     const defaultModel = resolveModel(modelPolicy as ModelPolicy);
 
-    const agent = await agentRepository.create(ctx.tenantId, {
+    const agent = await agentRepository.create({
       name,
       slug,
       description,
@@ -81,7 +73,7 @@ export async function POST(
       meta: { modelPolicy },
     });
 
-    await agentRepository.createVersion(ctx.tenantId, agent.id, {
+    await agentRepository.createVersion(agent.id, {
       version: 1,
       instructions,
       allowedTools,

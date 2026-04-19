@@ -7,7 +7,6 @@ import { DataTable } from "@/components/data-table/DataTable";
 import type { TableConfig } from "@/components/data-table/types";
 import type { AgentRun } from "@/db/agents/schema";
 import { RunDetailSheet } from "./RunDetailSheet";
-import { useTenant } from "@/lib/tenant-context";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   completed: "default",
@@ -21,7 +20,6 @@ interface AgentRunHistoryProps {
 }
 
 export function AgentRunHistory({ runs }: AgentRunHistoryProps) {
-  const { tenantSlug } = useTenant();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [detailRun, setDetailRun] = useState<AgentRun | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -43,7 +41,7 @@ export function AgentRunHistory({ runs }: AgentRunHistoryProps) {
         setDetailLoading(false);
       }
     },
-    [tenantSlug]
+    []
   );
 
   const tableConfig: TableConfig<AgentRun> = {

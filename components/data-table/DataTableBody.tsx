@@ -20,14 +20,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ColumnDef, ActionDef, TableConfig } from "./types";
-import type { ViewerMode } from "@/lib/viewer-mode-context";
-import { hasPermission, type Permission } from "@/lib/permissions";
 
 interface DataTableBodyProps<TRow extends { id: string | number }> {
   rows: TRow[];
   config: TableConfig<TRow>;
-  viewerMode: ViewerMode;
-  permissions: Permission[];
   selectionEnabled?: boolean;
   selectedIds?: Set<string | number>;
   onSelectionChange?: (ids: Set<string | number>) => void;
@@ -57,23 +53,15 @@ function getAlignClass(align: ColumnDef<unknown>["align"]): string {
 export function DataTableBody<TRow extends { id: string | number }>({
   rows,
   config,
-  viewerMode,
-  permissions,
   selectionEnabled = false,
   selectedIds,
   onSelectionChange,
 }: DataTableBodyProps<TRow>) {
   const router = useRouter();
 
-  const visibleColumns = config.columns.filter(
-    (col) => !(col.adminOnly && viewerMode === "viewer")
-  );
+  const visibleColumns = config.columns;
 
-  const effectiveActions = (config.actions ?? []).filter(
-    (action) =>
-      !action.requiredPermission ||
-      hasPermission(permissions, action.requiredPermission)
-  );
+  const effectiveActions = config.actions ?? [];
 
   const hasActions = effectiveActions.length > 0;
 

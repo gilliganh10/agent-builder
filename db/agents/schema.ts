@@ -1,5 +1,4 @@
 import type { Tool } from "@openai/agents";
-import type { Permission } from "@/lib/permissions";
 
 // ---------------------------------------------------------------------------
 // Literal unions
@@ -40,7 +39,8 @@ export interface AgentCtaMessageContent {
   type: "cta";
   title: string;
   body: string;
-  primaryAction: AgentMessageAction;
+  /** Legacy: interactive actions were removed from this build. */
+  primaryAction?: AgentMessageAction;
   secondaryAction?: AgentMessageAction;
 }
 
@@ -52,7 +52,8 @@ export interface AgentCarouselItem {
   badge?: string;
   metadata?: Record<string, JSONValue>;
   imageUrl?: string | null;
-  primaryAction: AgentMessageAction;
+  /** Legacy: interactive actions were removed from this build. */
+  primaryAction?: AgentMessageAction;
   secondaryAction?: AgentMessageAction;
 }
 
@@ -240,7 +241,6 @@ export interface FlowNodeData {
   displayColor?: string;
   displaySide?: "left" | "right";
   displayName?: string;
-  primitiveId?: string;
   primitiveKind?: PrimitiveKind;
   varsRead?: string[];
   varsPatch?: Record<string, string>;
@@ -526,7 +526,6 @@ export interface BlockAttachment {
   id: string;
   mode: AttachmentMode;
   label: string;
-  primitiveId?: string;
   inlinePrimitive?: {
     kind: PrimitiveKind;
     instructions: string;
@@ -661,16 +660,12 @@ export interface AgentSpec {
 }
 
 // ---------------------------------------------------------------------------
-// AgentRunContext — single-scope OSS: tenantId is always an empty string and
-// is kept only so existing runtime signatures compile without churn.
+// AgentRunContext — passed to @openai/agents tools and the LLM runner.
 // ---------------------------------------------------------------------------
 
 export interface AgentRunContext {
   runId: string;
   triggeredBy: string;
-  permissions: Permission[];
-  /** Always "" in single-scope OSS build; retained for signature compatibility. */
-  tenantId: string;
   guardrailLlm?: import("openai").OpenAI;
 }
 

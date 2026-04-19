@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import type {
   AgentChatMessage,
   AgentConversationGoalState,
-  AgentMessageAction,
 } from "@/db/agents/schema";
 import { ChatBubble, type RenderableChatEntry } from "@/components/chat/ChatBubble";
 import { ConversationStatePanel } from "@/components/chat/ConversationStatePanel";
@@ -44,23 +43,11 @@ export interface ChatSendResult {
   locks?: string[];
 }
 
-export interface ChatActionResult {
-  messages?: AgentChatMessage[];
-  error?: string;
-  state?: Record<string, unknown>;
-  goals?: AgentConversationGoalState[];
-  locks?: string[];
-}
-
 export interface ChatUIProps {
   onSend: (
     message: string,
     sessionId: string | undefined
   ) => Promise<ChatSendResult>;
-  onAction?: (
-    action: AgentMessageAction,
-    sessionId: string | undefined
-  ) => Promise<ChatActionResult>;
   agentName?: string;
   isConversational?: boolean;
   compact?: boolean;
@@ -72,7 +59,6 @@ export interface ChatUIProps {
 
 export function ChatUI({
   onSend,
-  onAction,
   agentName = "Agent",
   isConversational = false,
   compact = false,
@@ -201,54 +187,6 @@ export function ChatUI({
     setPrevState(null);
   }, []);
 
-  const handleAction = useCallback(
-    async (action: AgentMessageAction) => {
-      if (!onAction) return;
-
-      const result = await onAction(action, sessionId);
-
-      if (result.error) {
-        const errorMessage = result.error ?? "Action failed.";
-        setEntries((prev) => [
-          ...prev,
-          { role: "error", content: errorMessage },
-        ]);
-        throw new Error(errorMessage);
-      }
-
-      if (result.state !== undefined) {
-        setPrevState(currentState);
-        setCurrentState(result.state ?? null);
-        if (!showStatePanel) setShowStatePanel(true);
-      }
-
-      if (result.goals !== undefined) {
-        setCurrentGoals(result.goals);
-        if (result.goals.length > 0 && !showStatePanel) setShowStatePanel(true);
-      }
-      if (result.locks !== undefined) {
-        setCurrentLocks(result.locks);
-      }
-
-      const actionMessages = result.messages ?? [];
-      if (actionMessages.length > 0) {
-        setEntries((prev) => [
-          ...prev,
-          ...actionMessages.map((message) => ({
-            role: message.displayName === "System" ? "system" as const : "agent" as const,
-            content: message.content,
-            ...(message.secondaryContent ? { secondaryContent: message.secondaryContent } : {}),
-            structuredContent: message.structuredContent,
-            displayName: message.displayName,
-            displayColor: message.displayColor,
-            displaySide: message.displaySide,
-          })),
-        ]);
-      }
-    },
-    [currentState, onAction, sessionId, showStatePanel]
-  );
-
   return (
     <div className={`flex flex-col ${compact ? "h-full" : "flex-1"}`}>
       {/* Messages area */}
@@ -271,12 +209,7 @@ export function ChatUI({
         )}
 
         {entries.map((entry, i) => (
-          <ChatBubble
-            key={i}
-            entry={entry}
-            compact={compact}
-            onAction={onAction ? handleAction : undefined}
-          />
+          <ChatBubble key={i} entry={entry} compact={compact} />
         ))}
 
         {loading && (

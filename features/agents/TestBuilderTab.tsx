@@ -10,7 +10,7 @@ import { useChatBuilder } from "./workspace/ChatBuilderContext";
  */
 export function TestBuilderTab() {
   const { agent, dirty } = useAgentWorkspace();
-  const { handleChatSend, handleChatAction } = useChatBuilder();
+  const { handleChatSend } = useChatBuilder();
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -27,7 +27,6 @@ export function TestBuilderTab() {
         </p>
         <ChatUI
           onSend={handleChatSend}
-          onAction={handleChatAction}
           agentName={agent.name}
           isConversational={agent.mode === "conversational"}
         />

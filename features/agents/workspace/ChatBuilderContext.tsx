@@ -9,7 +9,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useTenant } from "@/lib/tenant-context";
 import {
   extractGoalsFromBlocks,
   mergeGoalsFromHubAndBlocks,
@@ -29,7 +28,7 @@ import type {
   MessageBlockType,
   VarDefinition,
 } from "@/db/agents/schema";
-import type { ChatSendResult, ChatActionResult } from "@/components/chat/ChatUI";
+import type { ChatSendResult } from "@/components/chat/ChatUI";
 
 export interface ChatBuilderContextValue {
   blocks: MessageBlock[];
@@ -39,7 +38,6 @@ export interface ChatBuilderContextValue {
   selectedBlock: MessageBlock | null;
   stateConfig: import("@/db/agents/schema").AgentStateConfig;
   orchestratorVars: VarDefinition[];
-  primitiveSlugs: string[];
   envVars: import("@/db/agents/schema").EnvVarDefinition[];
   envOverrides: Record<string, string>;
 
@@ -57,10 +55,6 @@ export interface ChatBuilderContextValue {
   setEnvOverrides: (overrides: Record<string, string>) => void;
 
   handleChatSend: (message: string, sessionId: string | undefined) => Promise<ChatSendResult>;
-  handleChatAction: (
-    action: import("@/db/agents/schema").AgentMessageAction,
-    sessionId: string | undefined
-  ) => Promise<ChatActionResult>;
   fromDecompiledGraph: boolean;
 }
 
@@ -75,15 +69,12 @@ export function useChatBuilder(): ChatBuilderContextValue {
 }
 
 interface ChatBuilderProviderProps {
-  allPrimitiveSlugs: string[];
   children: ReactNode;
 }
 
 export function ChatBuilderProvider({
-  allPrimitiveSlugs,
   children,
 }: ChatBuilderProviderProps) {
-  const { tenantSlug } = useTenant();
   const {
     agent,
     setValidationResult,
@@ -127,8 +118,6 @@ export function ChatBuilderProvider({
     },
     [setRightPanelOpen, setRightPanelMode]
   );
-
-  const primitiveSlugs = useMemo(() => allPrimitiveSlugs ?? [], [allPrimitiveSlugs]);
 
   const canonicalUserBlockId = useMemo(
     () => getCanonicalUserBlockId(blocks),
@@ -240,7 +229,7 @@ export function ChatBuilderProvider({
         stateConfig.goals ?? [],
         extractGoalsFromBlocks(spec.blocks)
       );
-      const result = validateChatBuilder(spec, undefined, primitiveSlugs, {
+      const result = validateChatBuilder(spec, undefined, {
         ...stateConfig,
         goals: mergedGoals,
       });
@@ -284,25 +273,7 @@ export function ChatBuilderProvider({
         error: data.error as string | undefined,
       };
     },
-    [agent.slug, tenantSlug]
-  );
-
-  const handleChatAction = useCallback(
-    async (
-      action: import("@/db/agents/schema").AgentMessageAction,
-      sessionId: string | undefined
-    ): Promise<ChatActionResult> => {
-      if (!sessionId) return { error: "Session required for message actions." };
-      const res = await fetch(`/api/agents/actions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentSlug: agent.slug, sessionId, action }),
-      });
-      const data = await res.json();
-      if (!res.ok) return { error: data.error ?? `Error ${res.status}` };
-      return { messages: data.messages ?? [], state: data.state, goals: data.goals, locks: data.locks };
-    },
-    [agent.slug, tenantSlug]
+    [agent.slug]
   );
 
   const value = useMemo<ChatBuilderContextValue>(
@@ -314,7 +285,6 @@ export function ChatBuilderProvider({
       selectedBlock,
       stateConfig,
       orchestratorVars,
-      primitiveSlugs,
       envVars,
       envOverrides,
       setSelectedBlockId,
@@ -330,7 +300,6 @@ export function ChatBuilderProvider({
       setEnvVars: setEnvVarsDirty,
       setEnvOverrides,
       handleChatSend,
-      handleChatAction,
       fromDecompiledGraph,
     }),
     [
@@ -341,7 +310,6 @@ export function ChatBuilderProvider({
       selectedBlock,
       stateConfig,
       orchestratorVars,
-      primitiveSlugs,
       envVars,
       envOverrides,
       setSelectedBlockId,
@@ -355,7 +323,6 @@ export function ChatBuilderProvider({
       setStateConfigDirty,
       setEnvVarsDirty,
       handleChatSend,
-      handleChatAction,
       fromDecompiledGraph,
     ]
   );

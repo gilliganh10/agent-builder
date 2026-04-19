@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteAgent } from "./actions";
-import { useTenant } from "@/lib/tenant-context";
 import type { AgentDefinition } from "@/db/agents/schema";
 
 interface AgentDeleteDialogProps {
@@ -27,7 +26,6 @@ export function AgentDeleteDialog({
   onOpenChange,
   agent,
 }: AgentDeleteDialogProps) {
-  const { tenantId } = useTenant();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +36,7 @@ export function AgentDeleteDialog({
 
     startTransition(async () => {
       try {
-        await deleteAgent(tenantId, agent.id);
+        await deleteAgent(agent.id);
         onOpenChange(false);
         router.refresh();
       } catch (err) {

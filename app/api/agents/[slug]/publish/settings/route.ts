@@ -14,8 +14,7 @@ export async function PATCH(
 ) {
   try {
     const { slug } = await params;
-    const ctx = { tenantId: "" } as const;
-    const agent = await agentRepository.findBySlug(ctx.tenantId, slug);
+    const agent = await agentRepository.findBySlug(slug);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
@@ -30,7 +29,7 @@ export async function PATCH(
       showStateSidebar: parsed.data.showStateSidebar,
     });
 
-    const updated = await agentRepository.update(ctx.tenantId, agent.id, {
+    const updated = await agentRepository.update(agent.id, {
       meta: nextMeta,
     });
 
