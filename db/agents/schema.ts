@@ -192,7 +192,17 @@ export interface FlowDefinition {
   version?: 1 | 2;
   orchestrator?: OrchestratorConfig;
   stateConfig?: AgentStateConfig;
+  /**
+   * Legacy Plan/Chat block tree. Present for agents authored before the
+   * simplified studio; new saves write `simplifiedBuilder` instead.
+   */
   chatBuilder?: ChatBuilderSpec;
+  /**
+   * Canonical, user-facing builder spec (seven step kinds). When present
+   * this is the source of truth for Plan and Graph; `nodes`/`edges` are
+   * its compiled projection.
+   */
+  simplifiedBuilder?: import("@/lib/agents/studio/simplified-types").SimplifiedBuilderSpec;
   nodes: FlowNode[];
   edges: FlowEdge[];
   envVars?: EnvVarDefinition[];

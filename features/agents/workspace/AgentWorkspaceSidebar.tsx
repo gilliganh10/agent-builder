@@ -76,7 +76,26 @@ const BLOCK_TYPE_META: Record<
 // ── Flow sidebar ──────────────────────────────────────────────────────────────
 
 function FlowSidebar() {
-  const { nodes, selectedNodeId, setSelectedNodeId, addNode } = useFlowBuilder();
+  const {
+    nodes,
+    selectedNodeId,
+    setSelectedNodeId,
+    addNode,
+    isProjection,
+    detachFromSimplified,
+  } = useFlowBuilder();
+
+  async function onDetach() {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "Switching to advanced graph editing disconnects this agent from the Plan tab. You will author the raw graph directly and Plan will no longer update it. Continue?"
+      )
+    ) {
+      return;
+    }
+    await detachFromSimplified();
+  }
 
   const sortedNodes = useMemo(() => {
     const inputNode = nodes.find((n) => n.type === "input");
@@ -118,34 +137,51 @@ function FlowSidebar() {
         </ScrollArea>
       </SidebarSection>
 
-      <div className="border-t border-border">
-        <SidebarSection label="Add node">
-          <div className="space-y-1 py-1">
-            <p className="px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Standard
-            </p>
-            {V1_PALETTE.map((item) => (
-              <AddNodeButton
-                key={item.type}
-                type={item.type}
-                label={item.label}
-                onClick={() => addNode(item.type)}
-              />
-            ))}
-            <p className="mt-2 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Primitives
-            </p>
-            {V2_PALETTE.map((item) => (
-              <AddNodeButton
-                key={item.type}
-                type={item.type}
-                label={item.label}
-                onClick={() => addNode(item.type)}
-              />
-            ))}
-          </div>
-        </SidebarSection>
-      </div>
+      {isProjection ? (
+        <div className="space-y-2 border-t border-border px-3 py-2.5 text-[11px] leading-snug text-muted-foreground">
+          <p>
+            This graph is a read-only projection of the Plan. Edit steps on
+            the Plan tab to change what runs here.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 w-full text-[11px]"
+            onClick={onDetach}
+          >
+            Switch to advanced editing
+          </Button>
+        </div>
+      ) : (
+        <div className="border-t border-border">
+          <SidebarSection label="Add node">
+            <div className="space-y-1 py-1">
+              <p className="px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Standard
+              </p>
+              {V1_PALETTE.map((item) => (
+                <AddNodeButton
+                  key={item.type}
+                  type={item.type}
+                  label={item.label}
+                  onClick={() => addNode(item.type)}
+                />
+              ))}
+              <p className="mt-2 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Primitives
+              </p>
+              {V2_PALETTE.map((item) => (
+                <AddNodeButton
+                  key={item.type}
+                  type={item.type}
+                  label={item.label}
+                  onClick={() => addNode(item.type)}
+                />
+              ))}
+            </div>
+          </SidebarSection>
+        </div>
+      )}
     </div>
   );
 }

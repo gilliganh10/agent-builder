@@ -9,10 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import { useTenant } from "@/lib/tenant-context";
 import {
-  compileToFlowDefinition,
   extractGoalsFromBlocks,
   mergeGoalsFromHubAndBlocks,
 } from "@/lib/agents/chat-builder/compiler";
@@ -85,12 +83,9 @@ export function ChatBuilderProvider({
   allPrimitiveSlugs,
   children,
 }: ChatBuilderProviderProps) {
-  const router = useRouter();
   const { tenantSlug } = useTenant();
   const {
     agent,
-    setSaving,
-    setDirty,
     setValidationResult,
     registerSaveHandler,
     registerValidateHandler,
@@ -231,57 +226,11 @@ export function ChatBuilderProvider({
     [docSetStateConfig]
   );
 
-  // Register save handler (refreshes on every render)
+  // Test tab is a read-only chat runner — saving happens from the Plan/Graph
+  // tabs. Register a no-op so stale save handlers from a previous tab don't
+  // accidentally write through the legacy chat-builder compile path.
   useLayoutEffect(() => {
-    registerSaveHandler(async () => {
-      setSaving(true);
-      setValidationResult([], [], false);
-
-      const spec = { blocks };
-      const goalsFromBlocks = extractGoalsFromBlocks(spec.blocks);
-      const effectiveStateConfig = {
-        ...stateConfig,
-        goals: mergeGoalsFromHubAndBlocks(stateConfig.goals ?? [], goalsFromBlocks),
-      };
-      const validation = validateChatBuilder(spec, undefined, primitiveSlugs, effectiveStateConfig);
-
-      if (!validation.valid) {
-        setValidationResult(
-          validation.errors.map((e) => `${e.path}: ${e.message}`),
-          validation.warnings.map((w) => `${w.path}: ${w.message}`),
-          false
-        );
-        setSaving(false);
-        return;
-      }
-
-      const preservedEnvVars =
-        envVars.length > 0 ? envVars : agent.flowDefinition?.envVars;
-      const flowDefinition = compileToFlowDefinition(
-        spec,
-        effectiveStateConfig,
-        undefined,
-        preservedEnvVars
-      );
-      try {
-        const res = await fetch(`/api/agents/${agent.slug}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ flowDefinition, changelog: "Updated via Chat Builder" }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? `Save failed (${res.status})`);
-        }
-        setValidationResult([], [], true);
-        setDirty(false);
-        router.refresh();
-      } catch (err) {
-        setValidationResult([err instanceof Error ? err.message : "Save failed"], [], false);
-      } finally {
-        setSaving(false);
-      }
-    });
+    registerSaveHandler(async () => {});
   });
 
   useLayoutEffect(() => {

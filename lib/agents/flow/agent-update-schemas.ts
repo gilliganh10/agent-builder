@@ -153,6 +153,116 @@ export const ChatBuilderSpecSchema = z.object({
   blocks: z.array(MessageBlockSchema),
 });
 
+// ---------------------------------------------------------------------------
+// Simplified builder (canonical studio spec)
+// ---------------------------------------------------------------------------
+
+const SimplifiedExtractFieldSchema = z.object({
+  key: z.string(),
+  type: z.enum(["string", "number", "boolean", "json"]),
+  description: z.string(),
+  optional: z.boolean().optional(),
+  messageRole: z.enum(["primary", "secondary", "none"]).optional(),
+});
+
+const SimplifiedVarMappingSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+});
+
+const SimplifiedStepBaseFields = {
+  id: z.string(),
+  label: z.string(),
+};
+
+const SimplifiedInputStepSchema = z.object({
+  ...SimplifiedStepBaseFields,
+  kind: z.literal("input"),
+});
+
+const SimplifiedMessageStepSchema = z.object({
+  ...SimplifiedStepBaseFields,
+  kind: z.literal("message"),
+  instructions: z.string(),
+  model: z.string().optional(),
+  outputMode: z.enum(["text", "json_schema"]),
+  jsonSchema: z.array(SimplifiedExtractFieldSchema).optional(),
+  varsRead: z.array(z.string()).optional(),
+  varsFromOutput: z.array(SimplifiedVarMappingSchema).optional(),
+});
+
+const SimplifiedTransformStepSchema = z.object({
+  ...SimplifiedStepBaseFields,
+  kind: z.literal("transform"),
+  instructions: z.string(),
+  model: z.string().optional(),
+  outputMode: z.enum(["text", "json_schema"]),
+  jsonSchema: z.array(SimplifiedExtractFieldSchema).optional(),
+  varsRead: z.array(z.string()).optional(),
+  varsFromOutput: z.array(SimplifiedVarMappingSchema).optional(),
+});
+
+const SimplifiedUpdateStateStepSchema = z.object({
+  ...SimplifiedStepBaseFields,
+  kind: z.literal("update_state"),
+  instructions: z.string().optional(),
+  model: z.string().optional(),
+  jsonSchema: z.array(SimplifiedExtractFieldSchema),
+  varsRead: z.array(z.string()).optional(),
+  varsFromOutput: z.array(SimplifiedVarMappingSchema).optional(),
+});
+
+const SimplifiedConditionStepSchema = z.object({
+  ...SimplifiedStepBaseFields,
+  kind: z.literal("condition"),
+  condition: z.object({
+    field: z.string(),
+    operator: ConditionOperatorEnum,
+    value: z.unknown().optional(),
+  }),
+  yesSteps: z.array(z.string()),
+  noSteps: z.array(z.string()),
+});
+
+const SimplifiedParallelStepSchema = z.object({
+  ...SimplifiedStepBaseFields,
+  kind: z.literal("parallel"),
+  laneALabel: z.string().optional(),
+  laneBLabel: z.string().optional(),
+  laneA: z.array(z.string()),
+  laneB: z.array(z.string()),
+});
+
+const SimplifiedEndStepSchema = z.object({
+  ...SimplifiedStepBaseFields,
+  kind: z.literal("end"),
+  closeConversation: z.boolean().optional(),
+  closingMessage: z.string().optional(),
+  goalId: z.string().optional(),
+});
+
+const SimplifiedStepSchema = z.discriminatedUnion("kind", [
+  SimplifiedInputStepSchema,
+  SimplifiedMessageStepSchema,
+  SimplifiedTransformStepSchema,
+  SimplifiedUpdateStateStepSchema,
+  SimplifiedConditionStepSchema,
+  SimplifiedParallelStepSchema,
+  SimplifiedEndStepSchema,
+]);
+
+export const SimplifiedBuilderSchema = z.object({
+  version: z.literal(1),
+  steps: z.array(SimplifiedStepSchema),
+  rootOrder: z.array(z.string()),
+  layoutHints: z
+    .record(
+      z.string(),
+      z.object({ x: z.number(), y: z.number() })
+    )
+    .optional(),
+});
+
 const StateFieldDefinitionSchema = z.object({
   key: z.string(),
   type: z.enum(["string", "number", "boolean", "json"]),
@@ -225,6 +335,7 @@ export const FlowDefinitionSchema = z.object({
     })
     .optional(),
   chatBuilder: ChatBuilderSpecSchema.optional(),
+  simplifiedBuilder: SimplifiedBuilderSchema.optional(),
   nodes: z.array(FlowNodeSchema),
   edges: z.array(FlowEdgeSchema),
   envVars: z

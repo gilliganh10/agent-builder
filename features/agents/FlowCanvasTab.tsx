@@ -50,23 +50,32 @@ export function FlowCanvasTab() {
     onConnect,
     onNodeClick,
     onPaneClick,
+    isProjection,
   } = useFlowBuilder();
 
   return (
-    <div ref={reactFlowWrapper} className="h-full w-full">
+    <div ref={reactFlowWrapper} className="relative h-full w-full">
+      {isProjection && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full border border-border/70 bg-background/90 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur">
+          Read-only projection of the Plan
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onNodesChange={isProjection ? undefined : onNodesChange}
+        onEdgesChange={isProjection ? undefined : onEdgesChange}
+        onConnect={isProjection ? undefined : onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         nodeTypes={NODE_TYPES}
         defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
         fitView
         fitViewOptions={{ padding: 0.3 }}
-        deleteKeyCode={["Backspace", "Delete"]}
+        deleteKeyCode={isProjection ? null : ["Backspace", "Delete"]}
+        nodesDraggable={!isProjection}
+        nodesConnectable={!isProjection}
+        edgesReconnectable={!isProjection}
       >
         <Controls position="bottom-left" />
         <MiniMap

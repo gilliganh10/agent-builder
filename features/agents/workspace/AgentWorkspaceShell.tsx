@@ -7,6 +7,7 @@ import { AgentWorkspaceProvider, useAgentWorkspace } from "./AgentWorkspaceConte
 import { BuilderDocumentProvider } from "./BuilderDocumentContext";
 import { FlowBuilderProvider } from "./FlowBuilderContext";
 import { ChatBuilderProvider } from "./ChatBuilderContext";
+import { SimplifiedBuilderProvider } from "@/features/agents/simplified/SimplifiedBuilderContext";
 import { AgentWorkspaceHeader } from "./AgentWorkspaceHeader";
 import { AgentWorkspaceTopBarSlots } from "./AgentWorkspaceTopBarSlots";
 import { AgentWorkspaceSidebar } from "./AgentWorkspaceSidebar";
@@ -114,7 +115,16 @@ function AgentWorkspaceInner({
     );
   }
 
-  if (isPlanTab || isTestTab) {
+  if (isPlanTab) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        <AgentWorkspaceHeader />
+        <SimplifiedBuilderProvider>{body}</SimplifiedBuilderProvider>
+      </div>
+    );
+  }
+
+  if (isTestTab) {
     return (
       <div className="flex h-full flex-col overflow-hidden">
         <AgentWorkspaceHeader />

@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { FlowNodeEditor } from "@/features/agents/FlowNodeEditor";
-import { BlockEditor } from "@/features/agents/chat-builder/BlockEditor";
+import { SimplifiedStepInspector } from "@/features/agents/simplified/SimplifiedStepInspector";
 import { useAgentWorkspace } from "./AgentWorkspaceContext";
 import { useFlowBuilder } from "./FlowBuilderContext";
-import { useChatBuilder } from "./ChatBuilderContext";
+import { useSimplifiedBuilder } from "@/features/agents/simplified/SimplifiedBuilderContext";
 
 type RightPanelMode = "inspect" | "issues";
 
@@ -73,38 +73,15 @@ function PlanRightPanel({ mode }: { mode: RightPanelMode }) {
     validationWarnings,
     validationSuccess,
   } = useAgentWorkspace();
-  const {
-    selectedBlock,
-    selectedAttachmentId,
-    setSelectedBlockId,
-    setSelectedAttachmentId,
-    updateBlock,
-    deleteBlock,
-    orchestratorVars,
-    primitiveSlugs,
-  } = useChatBuilder();
+  const { selectedStep } = useSimplifiedBuilder();
 
   if (mode === "inspect") {
-    return (
-      <ScrollArea className="h-full">
-        {selectedBlock ? (
-          <BlockEditor
-            block={selectedBlock}
-            onUpdate={updateBlock}
-            onDelete={deleteBlock}
-            onClose={() => {
-              setSelectedBlockId(null);
-              setSelectedAttachmentId(null);
-            }}
-            primitiveSlugs={primitiveSlugs}
-            orchestratorVars={orchestratorVars}
-            selectedAttachmentId={selectedAttachmentId}
-          />
-        ) : (
-          <EmptyInspector description="Select a step on the plan to inspect and edit its settings." />
-        )}
-      </ScrollArea>
-    );
+    if (!selectedStep) {
+      return (
+        <EmptyInspector description="Select a step on the left to inspect and edit it." />
+      );
+    }
+    return <SimplifiedStepInspector />;
   }
 
   return (

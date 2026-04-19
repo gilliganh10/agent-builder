@@ -27,6 +27,8 @@ import {
   resolveStateConfig,
   stateConfigToOrchestrator,
 } from "@/lib/agents/shared/state-config-utils";
+import { compileSimplifiedToFlowDefinition } from "@/lib/agents/studio";
+import type { SimplifiedBuilderSpec } from "@/lib/agents/studio";
 import { useAgentWorkspace } from "./AgentWorkspaceContext";
 import { useBuilderDocument } from "./BuilderDocumentContext";
 import type {
@@ -47,7 +49,43 @@ function generateNodeId(type: string): string {
   return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+/**
+ * When `simplifiedBuilder` is present on the flow definition, it is the
+ * canonical source of truth. Compile it in place so the canvas reflects the
+ * Plan authoring surface exactly, even if the persisted `nodes`/`edges` are
+ * stale (e.g. a Plan save just completed but a Graph refresh is pending).
+ */
+function projectionFromSimplified(
+  spec: SimplifiedBuilderSpec,
+  flow: FlowDefinition
+): { nodes: FlowNode[]; edges: Edge[] } {
+  const compiled = compileSimplifiedToFlowDefinition(spec, {
+    stateConfig: flow.stateConfig,
+    envVars: flow.envVars,
+  });
+  return {
+    nodes: compiled.nodes.map((n) => ({
+      id: n.id,
+      type: n.type,
+      position: n.position,
+      data: n.data,
+    })),
+    edges: compiled.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle,
+      targetHandle: e.targetHandle,
+      label: e.label,
+      data: e.data,
+    })),
+  };
+}
+
 function buildInitialNodes(flow?: FlowDefinition | null): FlowNode[] {
+  if (flow?.simplifiedBuilder) {
+    return projectionFromSimplified(flow.simplifiedBuilder, flow).nodes;
+  }
   if (flow?.nodes?.length) {
     return flow.nodes.map((n) => ({
       id: n.id,
@@ -62,7 +100,10 @@ function buildInitialNodes(flow?: FlowDefinition | null): FlowNode[] {
   ];
 }
 
-function buildInitialEdges(flow?: FlowDefinition | null) {
+function buildInitialEdges(flow?: FlowDefinition | null): Edge[] {
+  if (flow?.simplifiedBuilder) {
+    return projectionFromSimplified(flow.simplifiedBuilder, flow).edges;
+  }
   if (flow?.edges?.length) {
     return flow.edges.map((e) => ({
       id: e.id,
@@ -99,6 +140,18 @@ export interface FlowBuilderContextValue {
   agentSlugs: string[];
   primitiveSlugs: string[];
   isV2: boolean;
+  /**
+   * True when the canvas is a read-only projection of the canonical
+   * simplified builder. Callers should hide mutation affordances
+   * (node palette, connect, drag) and defer authoring to the Plan tab.
+   */
+  isProjection: boolean;
+  /**
+   * Escape hatch: drop the canonical simplifiedBuilder so the Graph tab
+   * becomes the source of truth again. Only available when projection.
+   * Returns once the detach has been persisted.
+   */
+  detachFromSimplified: () => Promise<void>;
 
   // ReactFlow handlers
   onNodesChange: (changes: NodeChange[]) => void;
@@ -193,6 +246,8 @@ export function FlowBuilderProvider({
   );
 
   const isV2 = agent.flowDefinition?.version === 2;
+  const isProjection = !!agent.flowDefinition?.simplifiedBuilder;
+  const simplifiedBuilder = agent.flowDefinition?.simplifiedBuilder;
 
   const orchestratorConfig = useMemo(
     () => stateConfigToOrchestrator(stateConfig, existingLocks),
@@ -216,10 +271,11 @@ export function FlowBuilderProvider({
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      if (isProjection) return;
       setEdges((eds) => addEdge({ ...connection, id: `e-${Date.now()}` }, eds));
       setDirty(true);
     },
-    [setEdges, setDirty]
+    [setEdges, setDirty, isProjection]
   );
 
   const onNodeClick = useCallback(
@@ -235,6 +291,7 @@ export function FlowBuilderProvider({
 
   const addNode = useCallback(
     (type: FlowNodeType) => {
+      if (isProjection) return;
       const id = generateNodeId(type);
       const newNode: FlowNode = {
         id,
@@ -246,27 +303,29 @@ export function FlowBuilderProvider({
       setSelectedNodeId(id);
       setDirty(true);
     },
-    [setNodes, setDirty, setSelectedNodeId]
+    [setNodes, setDirty, setSelectedNodeId, isProjection]
   );
 
   const updateNodeData = useCallback(
     (nodeId: string, patch: Partial<FlowNodeData>) => {
+      if (isProjection) return;
       setNodes((nds) =>
         nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...patch } } : n))
       );
       setDirty(true);
     },
-    [setNodes, setDirty]
+    [setNodes, setDirty, isProjection]
   );
 
   const deleteNode = useCallback(
     (nodeId: string) => {
+      if (isProjection) return;
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
       setSelectedNodeId(null);
       setDirty(true);
     },
-    [setNodes, setEdges, setDirty, setSelectedNodeId]
+    [setNodes, setEdges, setDirty, setSelectedNodeId, isProjection]
   );
 
   // Build and save
@@ -277,6 +336,7 @@ export function FlowBuilderProvider({
   const orchestratorConfigRef = useRef(orchestratorConfig);
   const isV2Ref = useRef(isV2);
   const builderBlocksRef = useRef(builderBlocks);
+  const simplifiedBuilderRef = useRef(simplifiedBuilder);
 
   // Keep refs up to date
   useLayoutEffect(() => { nodesRef.current = nodes; });
@@ -286,6 +346,7 @@ export function FlowBuilderProvider({
   useLayoutEffect(() => { orchestratorConfigRef.current = orchestratorConfig; });
   useLayoutEffect(() => { isV2Ref.current = isV2; });
   useLayoutEffect(() => { builderBlocksRef.current = builderBlocks; });
+  useLayoutEffect(() => { simplifiedBuilderRef.current = simplifiedBuilder; });
 
   function buildFlowDefinition(): FlowDefinition {
     const currentNodes = nodesRef.current;
@@ -302,10 +363,13 @@ export function FlowBuilderProvider({
     const flowVersion = currentIsV2 || hasPrimitiveNodes ? 2 : undefined;
     const hasChatBuilder = currentBuilderBlocks.length > 0;
 
+    const currentSimplified = simplifiedBuilderRef.current;
+
     return {
       ...(flowVersion ? { version: flowVersion as 1 | 2 } : {}),
       ...(flowVersion === 2 ? { orchestrator: currentOrchestratorConfig, stateConfig: currentStateConfig } : {}),
       ...(hasChatBuilder ? { chatBuilder: { blocks: currentBuilderBlocks } } : {}),
+      ...(currentSimplified ? { simplifiedBuilder: currentSimplified } : {}),
       nodes: currentNodes.map((n) => ({
         id: n.id,
         type: n.type as FlowNodeType,
@@ -374,6 +438,32 @@ export function FlowBuilderProvider({
       setValidationResult(errors, [], errors.length === 0);
     });
   });
+
+  const detachFromSimplified = useCallback(async () => {
+    if (!simplifiedBuilderRef.current) return;
+    const flow = buildFlowDefinition();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { simplifiedBuilder: _drop, ...rest } = flow;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/agents/${agent.slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          flowDefinition: rest,
+          changelog: "Switched to advanced graph editing",
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `Detach failed (${res.status})`);
+      }
+      setDirty(false);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }, [agent.slug, router, setSaving, setDirty]);
 
   const handleChatSend = useCallback(
     async (message: string, sessionId: string | undefined): Promise<ChatSendResult> => {
@@ -452,6 +542,8 @@ export function FlowBuilderProvider({
       agentSlugs,
       primitiveSlugs: allPrimitiveSlugs,
       isV2,
+      isProjection,
+      detachFromSimplified,
       onNodesChange,
       onEdgesChange,
       onConnect,
@@ -470,7 +562,7 @@ export function FlowBuilderProvider({
     [
       nodes, edges, selectedNodeId, selectedNode,
       envVars, stateConfig, orchestratorConfig, orchestratorVars, envOverrides,
-      agentSlugs, allPrimitiveSlugs, isV2,
+      agentSlugs, allPrimitiveSlugs, isV2, isProjection, detachFromSimplified,
       onNodesChange, onEdgesChange, onConnect, onNodeClick, onPaneClick,
       setSelectedNodeId, updateNodeData, deleteNode, addNode,
       setEnvVars, setStateConfig, setEnvOverrides,

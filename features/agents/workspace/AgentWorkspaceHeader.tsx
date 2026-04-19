@@ -139,20 +139,22 @@ export function AgentWorkspaceHeader() {
                 </Button>
               )}
 
-              <Button
-                variant="default"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => void triggerSave()}
-                disabled={saving}
-              >
-                {saving ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="mr-1 h-3.5 w-3.5" />
-                )}
-                Save
-              </Button>
+              {!isTestSubtab && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => void triggerSave()}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="mr-1 h-3.5 w-3.5" />
+                  )}
+                  Save
+                </Button>
+              )}
             </>
           )}
 
